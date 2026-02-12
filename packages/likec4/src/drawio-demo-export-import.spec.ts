@@ -120,8 +120,8 @@ describe('DrawIO export/import with cloud-system demo', () => {
     expect(allContent).toContain('cloud')
   })
 
-  it.skip(
-    'vice versa: import exported DrawIO back to LikeC4 and re-export produces loadable XML (import PR)',
+  it(
+    'vice versa: import exported DrawIO back to LikeC4 and re-export produces loadable XML',
     { timeout: 15_000 },
     async () => {
       const likec4 = await LikeC4.fromWorkspace(CLOUD_SYSTEM_PATH, { throwIfInvalid: true })
