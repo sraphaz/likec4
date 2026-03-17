@@ -9,13 +9,15 @@ import { gt as semverGt } from 'semver'
 import { isProduction, nodeENV } from 'std-env'
 import k from 'tinyrainbow'
 import type { PackageJson } from 'type-fest'
-import { name, version } from '../../../package.json' with { type: 'json' }
 import { boxen, logger } from '../../logger'
+import { name, version } from '../package-meta'
 
 type StoredConfiguration = {
   lastUpdateCheck?: number // timestamp
   latestVersion?: string
 }
+
+/** Persistent store for last update check timestamp and latest version. */
 export const conf = new ConfigStore<StoredConfiguration>({
   projectName: name,
   serialize: value => JSON5.stringify(value, null, 2),
@@ -65,6 +67,7 @@ export async function notifyAvailableUpdate() {
   }
 }
 
+/** Fetches latest version from npm, stores in conf; optionally reports up-to-date. */
 export async function checkAvailableUpdate(reportUpToDate = true) {
   try {
     conf.set({
