@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LeanixApiClient } from './leanix-api-client'
+import { LeanixApiError } from './leanix-api-client'
 import { fetchLeanixInventorySnapshot } from './leanix-inventory-snapshot'
 
 const FIXED_DATE = '2025-01-15T12:00:00.000Z'
@@ -175,5 +176,63 @@ describe('fetchLeanixInventorySnapshot', () => {
     await expect(
       fetchLeanixInventorySnapshot(client, { profile: 'invalid' as 'default' }),
     ).rejects.toThrow('profile must be one of: default, enterprise')
+  })
+
+  it('enterprise profile degrades to valid minimal snapshot when enriched query fails (unsupported field)', async () => {
+    const factSheets = [
+      { id: 'fs-1', name: 'App', type: 'Application' },
+      { id: 'fs-2', name: 'DB', type: 'DataEntity' },
+    ]
+    const minimalClient = createMockClient({ factSheets })
+    let allFactSheetsCallCount = 0
+    const client: LeanixApiClient = {
+      graphql: async (query: string, variables?: Record<string, unknown>) => {
+        if (query.includes('allFactSheets')) {
+          allFactSheetsCallCount++
+          if (allFactSheetsCallCount === 1 && query.includes('factSheetAttributes')) {
+            throw new LeanixApiError(
+              'GraphQL request failed',
+              undefined,
+              [{ message: 'Field "factSheetAttributes" doesn\'t exist on type "FactSheet".' }],
+            )
+          }
+          return (minimalClient as LeanixApiClient).graphql(query, variables)
+        }
+        return (minimalClient as LeanixApiClient).graphql(query, variables)
+      },
+    } as LeanixApiClient
+
+    const snapshot = await fetchLeanixInventorySnapshot(client, {
+      generatedAt: FIXED_DATE,
+      profile: 'enterprise',
+      maxFactSheets: 100,
+    })
+
+    expect(snapshot.factSheets).toHaveLength(2)
+    expect(snapshot.factSheets[0]).toEqual({ id: 'fs-1', name: 'App', type: 'Application' })
+    expect(snapshot.factSheets[1]).toEqual({ id: 'fs-2', name: 'DB', type: 'DataEntity' })
+    expect(snapshot.relations).toHaveLength(0)
+    expect(allFactSheetsCallCount).toBe(2)
+  })
+
+  it('default profile does not request factSheetAttributes when likec4IdAttribute is unset', async () => {
+    const factSheets = [{ id: 'fs-1', name: 'App', type: 'Application' }]
+    let requestedAttributes = false
+    const client: LeanixApiClient = {
+      graphql: async (query: string, variables?: Record<string, unknown>) => {
+        if (query.includes('allFactSheets')) {
+          requestedAttributes = requestedAttributes || query.includes('factSheetAttributes')
+          return createMockClient({ factSheets }).graphql(query, variables)
+        }
+        return createMockClient({ factSheets }).graphql(query, variables)
+      },
+    } as LeanixApiClient
+
+    await fetchLeanixInventorySnapshot(client, {
+      generatedAt: FIXED_DATE,
+      profile: 'default',
+    })
+
+    expect(requestedAttributes).toBe(false)
   })
 })

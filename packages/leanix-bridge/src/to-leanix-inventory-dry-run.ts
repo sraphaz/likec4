@@ -1,5 +1,10 @@
-import { getFactSheetType, getRelationType, mergeWithDefault } from './mapping'
-import type { LeanixMappingConfig } from './mapping'
+import {
+  getFactSheetType,
+  getRelationType,
+  mergeWithDefault,
+  resolveMappingConfig,
+} from './mapping'
+import type { LeanixMappingConfig, MappingProfileId, ResolvedLeanixMapping } from './mapping'
 import type { BridgeModelInput } from './model-input'
 
 /** Single LeanIX fact sheet in dry-run shape (no IDs from live API) */
@@ -32,8 +37,10 @@ export interface LeanixInventoryDryRun {
 }
 
 export interface ToLeanixInventoryDryRunOptions {
+  /** Partial mapping merged with profile base, or full custom mapping when no built-in profile. */
   mapping?: LeanixMappingConfig | null
-  mappingProfile?: string
+  /** Built-in profile id (default | enterprise) or custom string for manifest label. */
+  mappingProfile?: MappingProfileId | string
   generatedAt?: string
 }
 
@@ -82,6 +89,25 @@ function buildRelationsFromModel(
   return relations
 }
 
+function resolveMappingAndProfile(options: ToLeanixInventoryDryRunOptions): {
+  mapping: ResolvedLeanixMapping
+  mappingProfile: string
+} {
+  const profileOpt = options.mappingProfile
+  const useBuiltIn = profileOpt === 'default' || profileOpt === 'enterprise'
+
+  if (useBuiltIn) {
+    const mapping = resolveMappingConfig(profileOpt, options.mapping)
+    return { mapping, mappingProfile: profileOpt }
+  }
+  if (options.mapping != null) {
+    const mapping = mergeWithDefault(options.mapping)
+    return { mapping, mappingProfile: profileOpt ?? 'custom' }
+  }
+  const mapping = resolveMappingConfig('default')
+  return { mapping, mappingProfile: profileOpt ?? 'default' }
+}
+
 /**
  * Produces LeanIX-shaped inventory artifacts (fact sheets + relations) from a LikeC4 model.
  * Pure function; no live API. Use for dry-run and planning.
@@ -90,9 +116,8 @@ export function toLeanixInventoryDryRun(
   model: BridgeModelInput,
   options: ToLeanixInventoryDryRunOptions = {},
 ): LeanixInventoryDryRun {
-  const mapping = mergeWithDefault(options.mapping)
+  const { mapping, mappingProfile } = resolveMappingAndProfile(options)
   const generatedAt = options.generatedAt ?? new Date().toISOString()
-  const mappingProfile = options.mappingProfile ?? (options.mapping ? 'custom' : 'default')
 
   return {
     generatedAt,

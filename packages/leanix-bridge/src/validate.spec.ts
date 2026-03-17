@@ -134,4 +134,84 @@ describe('isLeanixInventorySnapshot', () => {
   it('returns false when generatedAt is missing or not string', () => {
     expect(isLeanixInventorySnapshot({ ...validSnapshot, generatedAt: 123 })).toBe(false)
   })
+
+  it('returns true for valid enriched snapshot (optional fact sheet fields)', () => {
+    const enriched = {
+      ...validSnapshot,
+      factSheets: [
+        {
+          id: 'fs-1',
+          name: 'App',
+          type: 'Application',
+          lifecycle: 'active',
+          status: 'operational',
+          tags: ['core', 'legacy'],
+          customFields: { customKey: 'value' },
+        },
+      ],
+    }
+    expect(isLeanixInventorySnapshot(enriched)).toBe(true)
+  })
+
+  it('returns false when optional string field is wrong type', () => {
+    const bad = {
+      ...validSnapshot,
+      factSheets: [
+        { id: 'fs-1', name: 'App', type: 'Application', lifecycle: 123 },
+      ],
+    }
+    expect(isLeanixInventorySnapshot(bad)).toBe(false)
+  })
+
+  it('returns false when optional array field is string instead of string[]', () => {
+    const bad = {
+      ...validSnapshot,
+      factSheets: [
+        { id: 'fs-1', name: 'App', type: 'Application', tags: 'not-array' },
+      ],
+    }
+    expect(isLeanixInventorySnapshot(bad)).toBe(false)
+  })
+
+  it('returns false when optional array field has non-string elements', () => {
+    const bad = {
+      ...validSnapshot,
+      factSheets: [
+        { id: 'fs-1', name: 'App', type: 'Application', tags: [1, 2] },
+      ],
+    }
+    expect(isLeanixInventorySnapshot(bad)).toBe(false)
+  })
+
+  it('returns false when customFields is not record-like', () => {
+    const bad = {
+      ...validSnapshot,
+      factSheets: [
+        { id: 'fs-1', name: 'App', type: 'Application', customFields: 'not-object' },
+      ],
+    }
+    expect(isLeanixInventorySnapshot(bad)).toBe(false)
+  })
+
+  it('returns true for relation with optional id', () => {
+    expect(
+      isLeanixInventorySnapshot({
+        ...validSnapshot,
+        relations: [
+          { id: 'rel-1', sourceFactSheetId: 'fs-1', targetFactSheetId: 'fs-2', type: 'RELATES_TO' },
+        ],
+      }),
+    ).toBe(true)
+  })
+
+  it('returns false when relation id is not string', () => {
+    expect(
+      isLeanixInventorySnapshot({
+        ...validSnapshot,
+        relations: [
+          { id: 123, sourceFactSheetId: 'fs-1', targetFactSheetId: 'fs-2', type: 'RELATES_TO' },
+        ],
+      }),
+    ).toBe(false)
+  })
 })

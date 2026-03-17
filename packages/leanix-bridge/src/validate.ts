@@ -15,6 +15,34 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+/** Optional string field: if present must be string. */
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || value === null || typeof value === 'string'
+}
+
+/** Optional array of strings: if present must be string[]. */
+function isOptionalStringArray(value: unknown): boolean {
+  if (value === undefined || value === null) return true
+  if (!Array.isArray(value)) return false
+  return value.every(v => typeof v === 'string')
+}
+
+/** True if value is a valid customFields entry (undefined, string, or string[]). */
+function isCustomFieldValue(value: unknown): boolean {
+  return (
+    value === undefined ||
+    typeof value === 'string' ||
+    (Array.isArray(value) && value.every(x => typeof x === 'string'))
+  )
+}
+
+/** Optional record for customFields: if present must be object with string/string[]/undefined values. */
+function isOptionalCustomFields(value: unknown): boolean {
+  if (value === undefined || value === null) return true
+  if (typeof value !== 'object' || value === null) return false
+  return Object.values(value as Record<string, unknown>).every(isCustomFieldValue)
+}
+
 function isManifestEntity(value: unknown): value is ManifestEntity {
   if (!isRecord(value)) return false
   return typeof value['canonicalId'] === 'string'
@@ -35,22 +63,50 @@ function isManifestRelation(value: unknown): value is ManifestRelation {
   )
 }
 
+const OPTIONAL_STRING_KEYS = [
+  'likec4Id',
+  'lifecycle',
+  'status',
+  'owner',
+  'team',
+  'responsible',
+  'criticality',
+  'businessImportance',
+  'technology',
+  'platform',
+] as const
+const OPTIONAL_STRING_ARRAY_KEYS = ['capabilities', 'domains', 'interfaces', 'tags', 'categories'] as const
+
 function isLeanixFactSheetSnapshotItem(value: unknown): value is LeanixFactSheetSnapshotItem {
   if (!isRecord(value)) return false
-  return (
-    typeof value['id'] === 'string' &&
-    typeof value['name'] === 'string' &&
-    typeof value['type'] === 'string'
-  )
+  if (
+    typeof value['id'] !== 'string' ||
+    typeof value['name'] !== 'string' ||
+    typeof value['type'] !== 'string'
+  ) {
+    return false
+  }
+  for (const key of OPTIONAL_STRING_KEYS) {
+    if (value[key] !== undefined && !isOptionalString(value[key])) return false
+  }
+  for (const key of OPTIONAL_STRING_ARRAY_KEYS) {
+    if (value[key] !== undefined && !isOptionalStringArray(value[key])) return false
+  }
+  if (value['customFields'] !== undefined && !isOptionalCustomFields(value['customFields'])) return false
+  return true
 }
 
 function isLeanixRelationSnapshotItem(value: unknown): value is LeanixRelationSnapshotItem {
   if (!isRecord(value)) return false
-  return (
-    typeof value['sourceFactSheetId'] === 'string' &&
-    typeof value['targetFactSheetId'] === 'string' &&
-    typeof value['type'] === 'string'
-  )
+  if (
+    typeof value['sourceFactSheetId'] !== 'string' ||
+    typeof value['targetFactSheetId'] !== 'string' ||
+    typeof value['type'] !== 'string'
+  ) {
+    return false
+  }
+  if (value['id'] !== undefined && typeof value['id'] !== 'string') return false
+  return true
 }
 
 /**

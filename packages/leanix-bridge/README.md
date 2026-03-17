@@ -22,6 +22,12 @@ From the project root:
 # Generate bridge artifacts (manifest, leanix-dry-run.json, report) to out/bridge
 likec4 gen leanix dry-run -o out/bridge
 
+# Use enterprise mapping profile (container → DataEntity, extra relation types)
+likec4 gen leanix dry-run -o out/bridge --mapping-profile enterprise
+
+# Merge overrides from a JSON file onto the default profile
+likec4 gen leanix dry-run -o out/bridge --mapping-override ./mapping-overrides.json
+
 # Sync workflow: write artifacts and optional sync-plan (read-only when LEANIX_API_TOKEN is set)
 likec4 sync leanix --dry-run -o out/bridge
 
@@ -29,9 +35,9 @@ likec4 sync leanix --dry-run -o out/bridge
 likec4 sync leanix --apply -o out/bridge
 
 # Phase 2 inbound: fetch LeanIX inventory (read-only), then reconcile with manifest
-# Fetch LeanIX inventory snapshot (read-only) to out/bridge
+# Fetch LeanIX inventory snapshot (read-only) to out/bridge (default profile: minimal, safest for all tenants)
 likec4 gen leanix inventory -o out/bridge
-# Optional: use enterprise profile for enriched optional fields (lifecycle, status, technology, etc.) from factSheetAttributes
+# Optional: enterprise profile = best-effort enrichment from factSheetAttributes; if the tenant does not support them, falls back to valid minimal snapshot
 likec4 gen leanix inventory -o out/bridge --profile enterprise
 # Run reconciliation between manifest and LeanIX inventory, output to out/bridge
 likec4 gen leanix reconcile -o out/bridge
@@ -118,13 +124,13 @@ const mapping = manifestToDrawioLeanixMapping(result.manifest)
 ## API
 
 - **`toBridgeManifest(model, options?)`** – builds the identity manifest (canonical IDs + placeholder external IDs).
-- **`toLeanixInventoryDryRun(model, options?)`** – builds LeanIX-shaped fact sheets and relations (no live IDs).
+- **`toLeanixInventoryDryRun(model, options?)`** – builds LeanIX-shaped fact sheets and relations (no live IDs). Options: `mappingProfile?` (`'default'` | `'enterprise'` or custom string for manifest label), `mapping?` (partial overrides merged onto profile), `generatedAt?`.
 - **`buildBridgeReport(manifest, leanixDryRun)`** – builds a summary report with counts and artifact names.
 - **`LeanixApiClient(config)`** – GraphQL client with Bearer auth and rate limiting (`apiToken`, `baseUrl?`, `requestDelayMs?`).
 - **`planSyncToLeanix(leanixDryRun, client, options?)`** – queries LeanIX (read-only) and returns a **sync plan** (`SyncPlan`): per–fact sheet and per-relation actions (`create` / `update`), summary counts, and any query errors. Use before `syncToLeanix` to review what would change. Options: `idempotent?`, `generatedAt?`.
 - **`syncToLeanix(manifest, leanixDryRun, client, options?)`** – syncs dry-run to LeanIX API; returns updated manifest with `external.leanix.factSheetId` and relation IDs. Options: `idempotent?`, `likec4IdAttribute?`.
 - **`manifestToDrawioLeanixMapping(manifest)`** – returns `{ likec4IdToLeanixId, relationKeyToLeanixRelationId }` for Draw.io bridge-managed export or re-import from LeanIX.
-- **`fetchLeanixInventorySnapshot(client, options?)`** – fetches a read-only snapshot of LeanIX fact sheets and relations (paginated); returns `LeanixInventorySnapshot`. Options: `likec4IdAttribute?`, `maxFactSheets?`, `generatedAt?`, `profile?` (`'default'` | `'enterprise'`). With `profile: 'enterprise'`, factSheetAttributes are requested and mapped to optional fields (lifecycle, status, owner, technology, tags, etc.); missing fields are omitted (tenant-safe).
+- **`fetchLeanixInventorySnapshot(client, options?)`** – fetches a read-only snapshot of LeanIX fact sheets and relations (paginated); returns `LeanixInventorySnapshot`. Options: `likec4IdAttribute?`, `maxFactSheets?`, `generatedAt?`, `profile?` (`'default'` | `'enterprise'`). **Default profile** is minimal and safest for all tenants. **Enterprise profile** is best-effort: requests factSheetAttributes and maps them to optional fact-sheet fields (lifecycle, status, owner, technology, tags, etc.); if the tenant schema does not support these fields, the call degrades to a valid minimal snapshot instead of failing. Relations in the snapshot contain only `id`, `sourceFactSheetId`, `targetFactSheetId`, `type` (no relation enrichment in this API).
 - **`reconcileInventoryWithManifest(snapshot, manifest, options?)`** – compares manifest to LeanIX snapshot; returns `ReconciliationResult` (matched, unmatchedInLikec4, unmatchedInLeanix, ambiguous). Optional `dryRun` improves matching.
 - **`buildDriftReport(reconciliation)`** – builds a `DriftReport` from a `ReconciliationResult` (status, summary, description); accepts a single `ReconciliationResult` and returns `DriftReport`.
 - **`impactReportFromSyncPlan(plan)`** – computes impact analysis from a sync plan; returns `ImpactReport` with affected entities and severity.
@@ -132,7 +138,14 @@ const mapping = manifestToDrawioLeanixMapping(result.manifest)
 - **`runGovernanceChecks(reconciliation, options?)`** – runs configurable governance rules on a `ReconciliationResult`; accepts optional `GovernanceCheckOptions` and returns `GovernanceReport` with pass/fail and violation messages.
 - **`isBridgeManifest(obj)`** / **`isLeanixInventorySnapshot(obj)`** – type guards for parsed JSON (e.g. from CLI artifact files).
 
-Mapping is configurable via `options.mapping` (kinds → fact sheet types, relation kinds → relation types). LeanIX GraphQL schema varies by workspace; fact sheet types and relation types are meta-model specific.
+### Mapping profiles and overrides
+
+- **Mapping profile**: named base config for LikeC4 → LeanIX mapping. Built-in profiles:
+  - **`default`** – current baseline: system→Application, container/component→ITComponent, actor→Provider; relation default "depends on". Same as `DEFAULT_LEANIX_MAPPING`.
+  - **`enterprise`** – extends default: container→DataEntity; relation kinds `calls` and `contains` mapped.
+- **Overrides**: partial `LeanixMappingConfig` merged on top of the chosen profile (e.g. override a single fact sheet type). Supported at API level via `options.mapping` and at CLI via `--mapping-override <path>` to a JSON file.
+- **API**: `getMappingProfile(id)`, `registerMappingProfile(id, config)`, `mergeMappingProfile(base, overrides)`, `resolveMappingConfig(profileId, overrides?)`. Use `resolveMappingConfig('default' | 'enterprise', overrides)` to get the final config. Custom profile ids can be registered for tests or programmatic use; built-in ids are `'default'` and `'enterprise'`.
+- **Future-facing**: `LeanixMappingConfig` includes optional placeholders `customIdentityFields` and `governanceFields` (both `Record<string, string>`). They are merged when provided via overrides or custom profiles but are not consumed by the bridge today; the profile shape can be extended later without breaking callers.
 
 ### Inbound snapshot and fetch profiles
 

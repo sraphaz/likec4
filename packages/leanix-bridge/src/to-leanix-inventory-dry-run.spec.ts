@@ -46,6 +46,39 @@ describe('toLeanixInventoryDryRun', () => {
     expect(backend?.type).toBe('CustomComponent')
   })
 
+  it('default profile (no options) produces same types as current behavior', () => {
+    const model = createFixtureModel()
+    const dryRun = toLeanixInventoryDryRun(model)
+
+    expect(dryRun.mappingProfile).toBe('default')
+    const cloud = dryRun.factSheets.find(f => f.likec4Id === 'cloud')
+    expect(cloud?.type).toBe('Application')
+    const backend = dryRun.factSheets.find(f => f.likec4Id === 'cloud.backend')
+    expect(backend?.type).toBe('ITComponent')
+  })
+
+  it('enterprise profile maps container to DataEntity', () => {
+    const model = createFixtureModel()
+    const dryRun = toLeanixInventoryDryRun(model, { mappingProfile: 'enterprise' })
+
+    expect(dryRun.mappingProfile).toBe('enterprise')
+    const backend = dryRun.factSheets.find(f => f.likec4Id === 'cloud.backend')
+    expect(backend?.type).toBe('DataEntity')
+  })
+
+  it('overrides merge onto profile base', () => {
+    const model = createFixtureModel()
+    const dryRun = toLeanixInventoryDryRun(model, {
+      mappingProfile: 'default',
+      mapping: { factSheetTypes: { system: 'CustomApp' } },
+    })
+
+    const cloud = dryRun.factSheets.find(f => f.likec4Id === 'cloud')
+    expect(cloud?.type).toBe('CustomApp')
+    const backend = dryRun.factSheets.find(f => f.likec4Id === 'cloud.backend')
+    expect(backend?.type).toBe('ITComponent')
+  })
+
   it('empty model produces empty factSheets and relations', () => {
     const model = createFixtureModel({ elements: [], relations: [], views: [] })
     const dryRun = toLeanixInventoryDryRun(model)
