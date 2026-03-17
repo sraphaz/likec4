@@ -117,3 +117,12 @@ export type {
 } from './governance-checks'
 
 export { isBridgeManifest, isLeanixInventorySnapshot } from './validate'
+
+export { BRIDGE_CONTEXT_ARTIFACT_NAMES, buildBridgeContext } from './bridge-context'
+export type {
+  BridgeContext,
+  BuildBridgeContextInput,
+  SemanticEntity,
+  SemanticRelation,
+  SemanticView,
+} from './bridge-context'

@@ -4,6 +4,7 @@ import type * as yargs from 'yargs'
 import { outdir, path, project, useCorePackage, useDotBin, webcomponentPrefix } from '../options'
 import { customHandler } from './custom'
 import { legacyHandler } from './handler'
+import { leanixContextHandler } from './leanix-context'
 import { leanixDryRunHandler } from './leanix-dry-run'
 import { leanixInventorySnapshotHandler } from './leanix-inventory-snapshot'
 import { leanixReconcileHandler } from './leanix-reconcile'
@@ -141,7 +142,7 @@ const codegenCmd = (yargs: yargs.Argv) => {
             builder: yargs =>
               yargs
                 .positional('path', path)
-                .demandCommand(1, 'Choose a subcommand: dry-run, inventory, reconcile')
+                .demandCommand(1, 'Choose a subcommand: dry-run, inventory, reconcile, context')
                 .command(
                   'dry-run [path]',
                   'generate LeanIX bridge artifacts (manifest, dry-run inventory, report)',
@@ -237,6 +238,32 @@ const codegenCmd = (yargs: yargs.Argv) => {
                       ),
                   async args => {
                     await leanixReconcileHandler({
+                      path: args.path,
+                      outdir: args.outdir ?? resolve(process.cwd(), 'out', 'bridge'),
+                      project: args.project,
+                      useDotBin: args.useDotBin,
+                    })
+                  },
+                )
+                .command(
+                  'context [path]',
+                  'build bridge-context.json and derived reports from manifest + dry-run (and optional reconciliation, snapshot)',
+                  cmd =>
+                    cmd
+                      .positional('path', path)
+                      .option('outdir', {
+                        ...outdir,
+                        default: resolve(process.cwd(), 'out', 'bridge'),
+                        desc: '<dir> output directory; reads existing artifacts or builds from workspace',
+                      })
+                      .option('project', project)
+                      .option('use-dot', useDotBin)
+                      .example(
+                        `${k.green('$0 gen leanix context -o out/bridge')}`,
+                        k.gray('Build bridge-context.json; writes drift/impact/governance reports when inputs exist'),
+                      ),
+                  async args => {
+                    await leanixContextHandler({
                       path: args.path,
                       outdir: args.outdir ?? resolve(process.cwd(), 'out', 'bridge'),
                       project: args.project,
@@ -349,6 +376,7 @@ const codegenCmd = (yargs: yargs.Argv) => {
   likec4 gen leanix dry-run -o out/bridge
   likec4 gen leanix inventory -o out/bridge
   likec4 gen leanix reconcile -o out/bridge
+  likec4 gen leanix context -o out/bridge
   likec4 gen ts --outfile likec4-model.ts
   likec4 gen webcomponent -o likec4.js --webcomponent-prefix c4 --use-dot ./src
   likec4 gen mmd --outdir assets/

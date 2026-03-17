@@ -1,10 +1,12 @@
 /**
  * Shared bridge CLI: model adapter, artifact building and writing.
- * Used by gen leanix dry-run and sync leanix.
+ * Used by gen leanix dry-run, gen leanix context, and sync leanix.
  */
 
 import type { AnyLikeC4Model } from '@likec4/core/model'
 import {
+  BRIDGE_CONTEXT_ARTIFACT_NAMES,
+  buildBridgeContext,
   buildBridgeReport,
   toBridgeManifest,
   toLeanixInventoryDryRun,
@@ -25,9 +27,9 @@ export const ERR_EMPTY_MODEL = 'No project or empty model'
 export const ERR_LEANIX_TOKEN_REQUIRED = 'LEANIX_API_TOKEN is required for likec4 sync leanix --apply'
 
 const DEFAULT_MAPPING_PROFILE = 'default' as const
-const ARTIFACT_MANIFEST = 'manifest.json'
-const ARTIFACT_DRY_RUN = 'leanix-dry-run.json'
-const ARTIFACT_REPORT = 'report.json'
+const ARTIFACT_MANIFEST = BRIDGE_CONTEXT_ARTIFACT_NAMES.manifest
+const ARTIFACT_DRY_RUN = BRIDGE_CONTEXT_ARTIFACT_NAMES.dryRun
+const ARTIFACT_REPORT = BRIDGE_CONTEXT_ARTIFACT_NAMES.report
 
 /**
  * Adapts an AnyLikeC4Model to BridgeModelInput for toBridgeManifest / toLeanixInventoryDryRun.
@@ -93,7 +95,9 @@ export async function writeBridgeArtifacts(
   logger.info(`${k.dim('generated')} ${relative(cwd, reportPath)}`)
 }
 
+/** Centralized artifact names for bridge outputs (single source of truth). */
 export const BRIDGE_ARTIFACT_NAMES = {
+  ...BRIDGE_CONTEXT_ARTIFACT_NAMES,
   manifest: ARTIFACT_MANIFEST,
   dryRun: ARTIFACT_DRY_RUN,
   report: ARTIFACT_REPORT,

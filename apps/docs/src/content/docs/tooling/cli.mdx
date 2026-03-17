@@ -225,6 +225,52 @@ likec4 gen plantuml
 
 Together with [Export to DrawIO](#export-to-drawio), this allows teams to reuse diagrams in Mermaid, Dot, D2, PlantUML, or DrawIO.
 
+### Generate LeanIX bridge artifacts (dry-run)
+
+Generate bridge artifacts (manifest, leanix-dry-run.json, report) from the LikeC4 model. No LeanIX API call.
+
+```sh
+likec4 gen leanix dry-run -o out/bridge
+likec4 gen leanix dry-run -o out/bridge --mapping-profile enterprise
+likec4 gen leanix dry-run -o out/bridge --mapping-override ./mapping-overrides.json
+```
+
+| Option                | Description                                                                 |
+| --------------------- | --------------------------------------------------------------------------- |
+| `--outdir, -o`        | Output directory for `manifest.json`, `leanix-dry-run.json`, `report.json` |
+| `--mapping-profile`   | Mapping profile: `default` (current behavior) or `enterprise` (e.g. container→DataEntity). Default: `default` |
+| `--mapping-override`  | Path to a JSON file with partial mapping overrides merged onto the chosen profile |
+
+### Generate LeanIX inventory snapshot
+
+Fetch a read-only snapshot of your LeanIX workspace (fact sheets and relations) for reconciliation with the LikeC4 bridge manifest. Requires `LEANIX_API_TOKEN` and optional `LEANIX_BASE_URL`.
+
+```sh
+likec4 gen leanix inventory -o out/bridge
+likec4 gen leanix inventory -o out/bridge --profile enterprise
+```
+
+| Option           | Description                                                                 |
+| ---------------- | --------------------------------------------------------------------------- |
+| `--outdir, -o`   | Output directory; writes `leanix-inventory-snapshot.json`                   |
+| `--profile`      | `default` (minimal fields, safest for all tenants) or `enterprise` (best-effort enrichment from fact sheet attributes). Default: `default` |
+
+With `--profile enterprise`, the CLI requests additional fact sheet attributes (e.g. lifecycle, status, technology). If the LeanIX tenant schema does not support these fields, the command falls back to a valid minimal snapshot instead of failing.
+
+### Generate LeanIX bridge context
+
+Build the unified **bridge-context** artifact (`bridge-context.json`) and, when inputs exist, derived reports (drift, impact, governance, ADR). Reads `manifest.json` and `leanix-dry-run.json` from the output directory, or builds them from the workspace if missing. Optionally uses `reconciliation-report.json`, `leanix-inventory-snapshot.json`, and `sync-plan.json` when present to include reconciliation, snapshot, and sync plan in the context and to write drift-report.json, impact-report.json, governance-report.json, and adr.md.
+
+```sh
+likec4 gen leanix context -o out/bridge
+```
+
+| Option           | Description                                                                 |
+| ---------------- | --------------------------------------------------------------------------- |
+| `--outdir, -o`   | Output directory; reads existing artifacts or builds manifest + dry-run from workspace; writes `bridge-context.json` and derived reports when inputs exist |
+
+The bridge-context is a compact, machine-usable projection for tooling or future AI/MCP layers; it does not include Draw.io XML or layout.
+
 <LinkCard
   title="Generate components"
   description="Learn how to generate React and Web Components"
