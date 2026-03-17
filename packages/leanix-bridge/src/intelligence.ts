@@ -205,9 +205,9 @@ export function summarizeEnterpriseContext(context: BridgeContext): SummarizeEnt
   }
 
   let governancePassed: boolean | undefined
-  const govResult = checkGovernance(context)
-  if (govResult.available && govResult.report != null) {
-    governancePassed = govResult.report.passed
+  const governanceResult = checkGovernance(context)
+  if (governanceResult.available && governanceResult.report != null) {
+    governancePassed = governanceResult.report.passed
   }
 
   const parts: string[] = [

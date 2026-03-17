@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { buildBridgeContext } from './bridge-context'
-import { createFixtureModel } from './fixture-model'
+import {
+  contextWithReconciliation,
+  contextWithSyncPlan,
+  minimalContext,
+} from './bridge-context-fixtures'
 import {
   checkGovernance,
   detectDrift,
@@ -10,35 +13,6 @@ import {
   listUnmatched,
   summarizeEnterpriseContext,
 } from './intelligence'
-import type { LeanixInventorySnapshot } from './leanix-inventory-snapshot'
-import { reconcileInventoryWithManifest } from './reconcile'
-import { toBridgeManifest } from './to-bridge-manifest'
-import { toLeanixInventoryDryRun } from './to-leanix-inventory-dry-run'
-
-const FIXED_DATE = '2025-01-15T12:00:00.000Z'
-
-function minimalContext() {
-  const model = createFixtureModel()
-  const manifest = toBridgeManifest(model, { generatedAt: FIXED_DATE, mappingProfile: 'default' })
-  const dryRun = toLeanixInventoryDryRun(model, { generatedAt: FIXED_DATE, mappingProfile: 'default' })
-  return buildBridgeContext({ manifest, dryRun })
-}
-
-function contextWithReconciliation() {
-  const model = createFixtureModel()
-  const manifest = toBridgeManifest(model, { generatedAt: FIXED_DATE, mappingProfile: 'default' })
-  const dryRun = toLeanixInventoryDryRun(model, { generatedAt: FIXED_DATE, mappingProfile: 'default' })
-  const snapshot: LeanixInventorySnapshot = {
-    generatedAt: FIXED_DATE,
-    factSheets: [
-      { id: 'fs-1', name: 'Cloud', type: 'Application' },
-      { id: 'fs-2', name: 'Backend', type: 'ITComponent' },
-    ],
-    relations: [],
-  }
-  const reconciliation = reconcileInventoryWithManifest(snapshot, manifest)
-  return buildBridgeContext({ manifest, dryRun, reconciliation })
-}
 
 describe('explainImpact', () => {
   it('returns available: false when context has no syncPlan or impactReport', () => {
@@ -54,6 +28,16 @@ describe('explainImpact', () => {
     expect(ctx.impactReport).toBeUndefined()
     const result = explainImpact(ctx)
     expect(result.available).toBe(false)
+  })
+
+  it('returns available: true with report and summary when context has syncPlan', () => {
+    const ctx = contextWithSyncPlan()
+    const result = explainImpact(ctx)
+    expect(result.available).toBe(true)
+    expect(result.report).toBeDefined()
+    expect(result.report?.summary.factSheetsToCreate).toBe(2)
+    expect(result.summary).toBeDefined()
+    expect(result.summary).toContain('2 fact sheet(s) to create')
   })
 })
 
