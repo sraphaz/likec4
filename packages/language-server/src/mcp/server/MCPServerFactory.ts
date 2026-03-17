@@ -15,6 +15,15 @@ import { batchReadElements } from '../tools/batch-read-elements'
 import { elementDiff } from '../tools/element-diff'
 import { findRelationshipPaths } from '../tools/find-relationship-paths'
 import { findRelationships } from '../tools/find-relationships'
+import {
+  checkGovernanceTool,
+  detectDriftTool,
+  explainImpactTool,
+  explainReconciliationTool,
+  generateAdrTool,
+  listUnmatchedTool,
+  summarizeEnterpriseContextTool,
+} from '../tools/leanix-bridge'
 import { listProjects } from '../tools/list-projects'
 import { openView } from '../tools/open-view'
 import { queryByMetadata } from '../tools/query-by-metadata'
@@ -66,6 +75,7 @@ Available tools:
 - query-by-tag-pattern — Search elements by tag prefix/contains/suffix patterns. Input: { pattern, matchMode?, project? }.
 - element-diff — Compare two elements side-by-side showing differences in properties, tags, metadata, and relationships. Input: { element1Id, element2Id, project? }.
 - subgraph-summary — Compact summary of all descendants of a parent element with metadata, tags, and relationship counts. Input: { elementId, maxDepth?, metadataKeys?, project? }.
+- LeanIX bridge (read-only): leanix-summarize-enterprise-context, leanix-detect-drift, leanix-explain-impact, leanix-list-unmatched, leanix-explain-reconciliation, leanix-check-governance, leanix-generate-adr. Input: { bridgeOutDir? } (default: out/bridge). Requires bridge-context.json from \`likec4 gen leanix context -o <outdir>\`.
 ${
         isInEditor
           ? '- open-view — Opens the LikeC4 view panel in the editor. Triggers UI; at most one preview panel at a time. Input: { viewId, project? }.'
@@ -106,6 +116,13 @@ Full documentation: https://likec4.dev/llms-full.txt
     mcp.registerTool(...queryByTagPattern(this.services.likec4.LanguageServices))
     mcp.registerTool(...elementDiff(this.services.likec4.LanguageServices))
     mcp.registerTool(...subgraphSummary(this.services.likec4.LanguageServices))
+    mcp.registerTool(...summarizeEnterpriseContextTool(this.services.likec4.LanguageServices))
+    mcp.registerTool(...detectDriftTool(this.services.likec4.LanguageServices))
+    mcp.registerTool(...explainImpactTool(this.services.likec4.LanguageServices))
+    mcp.registerTool(...listUnmatchedTool(this.services.likec4.LanguageServices))
+    mcp.registerTool(...explainReconciliationTool(this.services.likec4.LanguageServices))
+    mcp.registerTool(...checkGovernanceTool(this.services.likec4.LanguageServices))
+    mcp.registerTool(...generateAdrTool(this.services.likec4.LanguageServices))
     if (isInEditor) {
       mcp.registerTool(...openView(this.services.likec4.LanguageServices))
     }

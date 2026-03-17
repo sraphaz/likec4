@@ -70,6 +70,18 @@ OPTIONS
 - `element-diff`: Compare two elements and show differences in properties, tags, metadata, and relationships.
 - `open-view`: Opens the LikeC4 view (available if MCP is running in the editor)
 
+### LeanIX bridge (read-only)
+
+When the workspace has run `likec4 gen leanix context -o out/bridge`, the following tools expose deterministic bridge intelligence (no LLM, no sync):
+
+- `leanix-summarize-enterprise-context`: Summarize bridge state (counts, drift, governance). Input: `bridgeOutDir?` (default: out/bridge).
+- `leanix-detect-drift`: Detect drift between LikeC4 and LeanIX.
+- `leanix-explain-impact`: Explain impact of applying sync.
+- `leanix-list-unmatched`: List unmatched entities (LikeC4-only, LeanIX-only, ambiguous).
+- `leanix-explain-reconciliation`: Matched/unmatched counts and description.
+- `leanix-check-governance`: Run governance checks on reconciliation.
+- `leanix-generate-adr`: Generate ADR-style markdown from reconciliation/drift.
+
 ## Getting help
 
 We are always happy to help you get started:
