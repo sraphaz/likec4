@@ -2,6 +2,7 @@
 //
 // LeanIX bridge MCP tools – minimal tests (read-only tools, no sync/LLM).
 
+import type { BridgeContext } from '@likec4/leanix-bridge'
 import { URI } from 'langium'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -9,14 +10,15 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { summarizeEnterpriseContextTool } from './leanix-bridge'
 
-const minimalBridgeContext = {
+/** Minimal valid shape for loadBridgeContext and summarizeEnterpriseContext (contract-aligned). */
+const minimalBridgeContext: BridgeContext = {
   generatedAt: '2025-01-01T00:00:00.000Z',
   bridgeVersion: '1',
   projectId: 'test-project',
   mappingProfile: 'default',
   semantic: { entities: [], relations: [], views: [] },
-  manifest: {},
-  dryRun: {},
+  manifest: {} as BridgeContext['manifest'],
+  dryRun: {} as BridgeContext['dryRun'],
 }
 
 describe('leanix-bridge MCP tools', () => {
