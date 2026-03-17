@@ -4,26 +4,45 @@ import { fetchLeanixInventorySnapshot } from './leanix-inventory-snapshot'
 
 const FIXED_DATE = '2025-01-15T12:00:00.000Z'
 
+type MockFactSheet = {
+  id: string
+  name: string
+  type: string
+  likec4Id?: string
+  attributes?: Array<{ key: string; value: string }>
+}
+
 /** Mock client: one page of fact sheets; factSheet(id) returns empty relations. */
 function createMockClient(options: {
-  factSheets: Array<{ id: string; name: string; type: string; likec4Id?: string }>
+  factSheets: MockFactSheet[]
   likec4IdAttribute?: string
+  includeAttributesInResponse?: boolean
 }): LeanixApiClient {
-  const { factSheets, likec4IdAttribute } = options
+  const { factSheets, likec4IdAttribute, includeAttributesInResponse } = options
   return {
     graphql: async (query: string, variables?: Record<string, unknown>) => {
       if (query.includes('allFactSheets')) {
-        const nodes = factSheets.map(fs => ({
-          node: {
-            id: fs.id,
-            name: fs.name,
-            type: fs.type,
-            ...(likec4IdAttribute && fs.likec4Id
-              ? { factSheetAttributes: [{ key: likec4IdAttribute, value: fs.likec4Id }] }
-              : {}),
-          },
-          cursor: fs.id,
-        }))
+        const requestAttributes = query.includes('factSheetAttributes')
+        const nodes = factSheets.map(fs => {
+          const attrs: Array<{ key: string; value: string }> = []
+          if (likec4IdAttribute && fs.likec4Id) {
+            attrs.push({ key: likec4IdAttribute, value: fs.likec4Id })
+          }
+          if ((requestAttributes && includeAttributesInResponse) || (requestAttributes && attrs.length > 0)) {
+            for (const a of fs.attributes ?? []) {
+              attrs.push(a)
+            }
+          }
+          return {
+            node: {
+              id: fs.id,
+              name: fs.name,
+              type: fs.type,
+              ...(attrs.length > 0 ? { factSheetAttributes: attrs } : {}),
+            },
+            cursor: fs.id,
+          }
+        })
         return {
           allFactSheets: {
             edges: nodes,
@@ -88,5 +107,73 @@ describe('fetchLeanixInventorySnapshot', () => {
     await expect(
       fetchLeanixInventorySnapshot(client, { maxFactSheets: -1 }),
     ).rejects.toThrow('maxFactSheets must be a non-negative integer')
+  })
+
+  it('default profile returns minimal fields (backward compatible)', async () => {
+    const factSheets = [
+      { id: 'fs-1', name: 'App', type: 'Application' },
+    ]
+    const client = createMockClient({ factSheets })
+
+    const snapshot = await fetchLeanixInventorySnapshot(client, {
+      generatedAt: FIXED_DATE,
+      profile: 'default',
+    })
+
+    expect(snapshot.factSheets[0]).toEqual({ id: 'fs-1', name: 'App', type: 'Application' })
+  })
+
+  it('enterprise profile maps factSheetAttributes to optional fields when present', async () => {
+    const factSheets: MockFactSheet[] = [
+      {
+        id: 'fs-1',
+        name: 'App',
+        type: 'Application',
+        attributes: [
+          { key: 'lifecycle', value: 'active' },
+          { key: 'status', value: 'operational' },
+          { key: 'technology', value: 'Java' },
+          { key: 'tags', value: 'core,legacy' },
+        ],
+      },
+    ]
+    const client = createMockClient({ factSheets, includeAttributesInResponse: true })
+
+    const snapshot = await fetchLeanixInventorySnapshot(client, {
+      generatedAt: FIXED_DATE,
+      profile: 'enterprise',
+    })
+
+    expect(snapshot.factSheets).toHaveLength(1)
+    expect(snapshot.factSheets[0]?.id).toBe('fs-1')
+    expect(snapshot.factSheets[0]?.name).toBe('App')
+    expect(snapshot.factSheets[0]?.type).toBe('Application')
+    expect(snapshot.factSheets[0]?.lifecycle).toBe('active')
+    expect(snapshot.factSheets[0]?.status).toBe('operational')
+    expect(snapshot.factSheets[0]?.technology).toBe('Java')
+    expect(snapshot.factSheets[0]?.tags).toEqual(['core', 'legacy'])
+  })
+
+  it('enterprise profile with no attributes returns valid snapshot (missing optional fields do not break)', async () => {
+    const factSheets = [
+      { id: 'fs-1', name: 'App', type: 'Application' },
+    ]
+    const client = createMockClient({ factSheets })
+
+    const snapshot = await fetchLeanixInventorySnapshot(client, {
+      generatedAt: FIXED_DATE,
+      profile: 'enterprise',
+    })
+
+    expect(snapshot.factSheets).toHaveLength(1)
+    expect(snapshot.factSheets[0]).toEqual({ id: 'fs-1', name: 'App', type: 'Application' })
+  })
+
+  it('throws when profile is invalid', async () => {
+    const client = createMockClient({ factSheets: [] })
+
+    await expect(
+      fetchLeanixInventorySnapshot(client, { profile: 'invalid' as 'default' }),
+    ).rejects.toThrow('profile must be one of: default, enterprise')
   })
 })

@@ -76,6 +76,7 @@ export { fetchLeanixInventorySnapshot } from './leanix-inventory-snapshot'
 export type {
   FetchLeanixInventorySnapshotOptions,
   LeanixFactSheetSnapshotItem,
+  LeanixInventoryFetchProfile,
   LeanixInventorySnapshot,
   LeanixRelationSnapshotItem,
 } from './leanix-inventory-snapshot'

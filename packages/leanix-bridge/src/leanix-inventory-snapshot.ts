@@ -1,9 +1,17 @@
 /**
  * Inbound LeanIX: read-only snapshot of LeanIX inventory (fact sheets + relations).
  * Used for reconciliation with the LikeC4 manifest; no DSL generation.
+ * Enriched optional fields are populated when using profile 'enterprise' and the tenant exposes them via factSheetAttributes.
  */
 
 import type { LeanixApiClient } from './leanix-api-client'
+
+/**
+ * Fetch profile for inbound inventory snapshot.
+ * - default: minimal fields (id, name, type, optional likec4Id); safe for all tenants.
+ * - enterprise: requests factSheetAttributes and maps known keys to optional fields; missing keys are omitted (graceful fallback).
+ */
+export type LeanixInventoryFetchProfile = 'default' | 'enterprise'
 
 /** Single fact sheet as returned from LeanIX API (read-only snapshot). */
 export interface LeanixFactSheetSnapshotItem {
@@ -12,6 +20,23 @@ export interface LeanixFactSheetSnapshotItem {
   type: string
   /** Set when fetched with likec4IdAttribute and the fact sheet has that custom attribute. */
   likec4Id?: string
+  /** Optional enriched fields; present when profile is 'enterprise' and tenant exposes them. */
+  lifecycle?: string
+  status?: string
+  owner?: string
+  team?: string
+  responsible?: string
+  criticality?: string
+  businessImportance?: string
+  capabilities?: string[]
+  domains?: string[]
+  technology?: string
+  platform?: string
+  interfaces?: string[]
+  tags?: string[]
+  categories?: string[]
+  /** Any other custom attribute key-value pairs not mapped to named fields. */
+  customFields?: Record<string, string | string[] | undefined>
 }
 
 /** Single relation as returned from LeanIX API (read-only snapshot). */
@@ -20,6 +45,12 @@ export interface LeanixRelationSnapshotItem {
   sourceFactSheetId: string
   targetFactSheetId: string
   type: string
+  /** Optional; present when profile is 'enterprise' and API returns it. */
+  description?: string | null
+  /** Optional metadata; tenant-specific shape. */
+  metadata?: Record<string, unknown>
+  /** Optional custom attribute key-value pairs. */
+  customFields?: Record<string, string | string[] | undefined>
 }
 
 /** Read-only snapshot of LeanIX inventory for reconciliation. */
@@ -38,11 +69,31 @@ export interface FetchLeanixInventorySnapshotOptions {
   maxFactSheets?: number
   /** ISO timestamp for snapshot. Default: new Date().toISOString() */
   generatedAt?: string
+  /**
+   * Fetch profile: 'default' (minimal fields, safe for all tenants) or 'enterprise' (requests factSheetAttributes and maps known keys to optional fields).
+   * When a field is not present in the tenant, it is omitted; no crash.
+   */
+  profile?: LeanixInventoryFetchProfile
 }
 
 const DEFAULT_PAGE_SIZE = 100
 const DEFAULT_MAX_FACT_SHEETS = 1000
 const MAX_GRAPHQL_RETRIES = 3
+
+/** Known factSheetAttribute keys mapped to LeanixFactSheetSnapshotItem optional fields (enterprise profile). Missing keys are omitted. */
+const ENTERPRISE_ATTR_KEY_TO_FIELD: Record<string, keyof LeanixFactSheetSnapshotItem> = {
+  lifecycle: 'lifecycle',
+  status: 'status',
+  owner: 'owner',
+  team: 'team',
+  responsible: 'responsible',
+  criticality: 'criticality',
+  businessImportance: 'businessImportance',
+  technology: 'technology',
+  platform: 'platform',
+}
+/** Attribute keys that are stored as string arrays (comma-separated or JSON). */
+const ARRAY_ATTR_KEYS = new Set(['capabilities', 'domains', 'interfaces', 'tags', 'categories'])
 
 async function withGraphQLRetry<T>(fn: () => Promise<T>): Promise<T> {
   let lastErr: unknown
@@ -63,6 +114,8 @@ async function withGraphQLRetry<T>(fn: () => Promise<T>): Promise<T> {
  * Fetches a read-only snapshot of the LeanIX inventory (fact sheets, then relations).
  * Uses cursor-based pagination. Does not modify LeanIX.
  */
+const VALID_PROFILES: LeanixInventoryFetchProfile[] = ['default', 'enterprise']
+
 export async function fetchLeanixInventorySnapshot(
   client: LeanixApiClient,
   options: FetchLeanixInventorySnapshotOptions = {},
@@ -72,11 +125,16 @@ export async function fetchLeanixInventorySnapshot(
   if (!Number.isInteger(maxFactSheets) || maxFactSheets < 0) {
     throw new Error('maxFactSheets must be a non-negative integer')
   }
+  const profile = options.profile ?? 'default'
+  if (!VALID_PROFILES.includes(profile)) {
+    throw new Error(`profile must be one of: ${VALID_PROFILES.join(', ')}`)
+  }
   const likec4IdAttribute = options.likec4IdAttribute
 
   const factSheets = await fetchAllFactSheets(client, {
     ...(likec4IdAttribute != null ? { likec4IdAttribute } : {}),
     maxFactSheets,
+    profile,
   })
   const relations = await fetchAllRelations(client, factSheets.map(f => f.id))
 
@@ -94,36 +152,103 @@ type FactSheetNode = {
   factSheetAttributes?: Array<{ key?: string; value?: string }>
 }
 
+type AttrPair = { key?: string; value?: string }
+
+/** Parses a single attribute value into string or string[] (comma-separated or JSON array). Safe fallback to string. */
+function parseAttrValue(key: string, value: string | undefined): string | string[] | undefined {
+  if (value === undefined || value === '') return undefined
+  if (!ARRAY_ATTR_KEYS.has(key)) return value
+  const trimmed = value.trim()
+  if (trimmed.startsWith('[')) {
+    try {
+      const arr = JSON.parse(trimmed) as unknown
+      return Array.isArray(arr) ? arr.map(String) : [trimmed]
+    } catch {
+      return trimmed.includes(',') ? trimmed.split(',').map(s => s.trim()).filter(Boolean) : [trimmed]
+    }
+  }
+  return trimmed.includes(',') ? trimmed.split(',').map(s => s.trim()).filter(Boolean) : [trimmed]
+}
+
+/** Builds optional enriched fields + customFields from factSheetAttributes (enterprise profile). No throw; missing keys omitted. */
+function buildOptionalFieldsFromAttributes(
+  attributes: AttrPair[] | undefined,
+  likec4IdAttribute: string | undefined,
+): Partial<
+  Pick<
+    LeanixFactSheetSnapshotItem,
+    | 'lifecycle'
+    | 'status'
+    | 'owner'
+    | 'team'
+    | 'responsible'
+    | 'criticality'
+    | 'businessImportance'
+    | 'technology'
+    | 'platform'
+    | 'capabilities'
+    | 'domains'
+    | 'interfaces'
+    | 'tags'
+    | 'categories'
+    | 'customFields'
+  >
+> {
+  if (!Array.isArray(attributes) || attributes.length === 0) return {}
+  const customFields: Record<string, string | string[] | undefined> = {}
+  const result: Record<string, string | string[] | undefined> = {}
+  for (const a of attributes) {
+    const key = typeof a.key === 'string' ? a.key.trim() : ''
+    if (!key) continue
+    const parsed = parseAttrValue(key, a.value)
+    if (parsed === undefined) continue
+    const fieldName = ENTERPRISE_ATTR_KEY_TO_FIELD[key] ?? (ARRAY_ATTR_KEYS.has(key) ? key : null)
+    if (fieldName && !(key === likec4IdAttribute)) {
+      result[fieldName] = parsed
+    } else if (key !== likec4IdAttribute) {
+      customFields[key] = parsed
+    }
+  }
+  const out: Partial<LeanixFactSheetSnapshotItem> = { ...result }
+  if (Object.keys(customFields).length > 0) out.customFields = customFields
+  return out
+}
+
 /** Maps a GraphQL node to LeanixFactSheetSnapshotItem; returns null when node has no id. */
 function mapNodeToFactSheetItem(
   node: FactSheetNode | undefined,
   likec4IdAttribute: string | undefined,
+  profile: LeanixInventoryFetchProfile,
 ): LeanixFactSheetSnapshotItem | null {
   if (!node?.id) return null
-  const likec4Id = likec4IdAttribute != null && Array.isArray(node.factSheetAttributes)
-    ? node.factSheetAttributes.find((a: { key?: string; value?: string }) => a.key === likec4IdAttribute)?.value
+  const attrs = node.factSheetAttributes
+  const likec4Id = likec4IdAttribute != null && Array.isArray(attrs)
+    ? attrs.find((a: AttrPair) => a.key === likec4IdAttribute)?.value
     : undefined
-  return {
+  const base: LeanixFactSheetSnapshotItem = {
     id: node.id,
     name: node.name ?? '',
     type: node.type ?? '',
     ...(likec4Id ? { likec4Id } : {}),
   }
+  if (profile === 'enterprise' && Array.isArray(attrs) && attrs.length > 0) {
+    Object.assign(base, buildOptionalFieldsFromAttributes(attrs, likec4IdAttribute))
+  }
+  return base
 }
 
 async function fetchAllFactSheets(
   client: LeanixApiClient,
-  opts: { likec4IdAttribute?: string; maxFactSheets: number },
+  opts: { likec4IdAttribute?: string; maxFactSheets: number; profile: LeanixInventoryFetchProfile },
 ): Promise<LeanixInventorySnapshot['factSheets']> {
-  const likec4IdAttribute = opts.likec4IdAttribute
+  const { likec4IdAttribute, profile } = opts
   const pageSize = Math.min(DEFAULT_PAGE_SIZE, opts.maxFactSheets)
   const result: LeanixInventorySnapshot['factSheets'] = []
   let after: string | null = null
   let hasNextPage = true
 
-  const attributeSelection = likec4IdAttribute != null
-    ? `factSheetAttributes { key value }`
-    : ''
+  const requestAttributes = profile === 'enterprise' || likec4IdAttribute != null
+  const attributeSelection = requestAttributes ? `factSheetAttributes { key value }` : ''
 
   const query = `
     query AllFactSheets($first: Int!, $after: String, $filter: FilterInput) {
@@ -168,7 +293,7 @@ async function fetchAllFactSheets(
 
     for (const edge of edges) {
       if (result.length >= opts.maxFactSheets) break
-      const item = mapNodeToFactSheetItem(edge.node, likec4IdAttribute)
+      const item = mapNodeToFactSheetItem(edge.node, likec4IdAttribute, profile)
       if (item) result.push(item)
     }
 

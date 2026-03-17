@@ -31,6 +31,8 @@ likec4 sync leanix --apply -o out/bridge
 # Phase 2 inbound: fetch LeanIX inventory (read-only), then reconcile with manifest
 # Fetch LeanIX inventory snapshot (read-only) to out/bridge
 likec4 gen leanix inventory -o out/bridge
+# Optional: use enterprise profile for enriched optional fields (lifecycle, status, technology, etc.) from factSheetAttributes
+likec4 gen leanix inventory -o out/bridge --profile enterprise
 # Run reconciliation between manifest and LeanIX inventory, output to out/bridge
 likec4 gen leanix reconcile -o out/bridge
 ```
@@ -122,7 +124,7 @@ const mapping = manifestToDrawioLeanixMapping(result.manifest)
 - **`planSyncToLeanix(leanixDryRun, client, options?)`** – queries LeanIX (read-only) and returns a **sync plan** (`SyncPlan`): per–fact sheet and per-relation actions (`create` / `update`), summary counts, and any query errors. Use before `syncToLeanix` to review what would change. Options: `idempotent?`, `generatedAt?`.
 - **`syncToLeanix(manifest, leanixDryRun, client, options?)`** – syncs dry-run to LeanIX API; returns updated manifest with `external.leanix.factSheetId` and relation IDs. Options: `idempotent?`, `likec4IdAttribute?`.
 - **`manifestToDrawioLeanixMapping(manifest)`** – returns `{ likec4IdToLeanixId, relationKeyToLeanixRelationId }` for Draw.io bridge-managed export or re-import from LeanIX.
-- **`fetchLeanixInventorySnapshot(client, options?)`** – fetches a read-only snapshot of LeanIX fact sheets and relations (paginated); returns `LeanixInventorySnapshot`. Options: `likec4IdAttribute?`, `maxFactSheets?`, `generatedAt?`.
+- **`fetchLeanixInventorySnapshot(client, options?)`** – fetches a read-only snapshot of LeanIX fact sheets and relations (paginated); returns `LeanixInventorySnapshot`. Options: `likec4IdAttribute?`, `maxFactSheets?`, `generatedAt?`, `profile?` (`'default'` | `'enterprise'`). With `profile: 'enterprise'`, factSheetAttributes are requested and mapped to optional fields (lifecycle, status, owner, technology, tags, etc.); missing fields are omitted (tenant-safe).
 - **`reconcileInventoryWithManifest(snapshot, manifest, options?)`** – compares manifest to LeanIX snapshot; returns `ReconciliationResult` (matched, unmatchedInLikec4, unmatchedInLeanix, ambiguous). Optional `dryRun` improves matching.
 - **`buildDriftReport(reconciliation)`** – builds a `DriftReport` from a `ReconciliationResult` (status, summary, description); accepts a single `ReconciliationResult` and returns `DriftReport`.
 - **`impactReportFromSyncPlan(plan)`** – computes impact analysis from a sync plan; returns `ImpactReport` with affected entities and severity.
@@ -131,6 +133,11 @@ const mapping = manifestToDrawioLeanixMapping(result.manifest)
 - **`isBridgeManifest(obj)`** / **`isLeanixInventorySnapshot(obj)`** – type guards for parsed JSON (e.g. from CLI artifact files).
 
 Mapping is configurable via `options.mapping` (kinds → fact sheet types, relation kinds → relation types). LeanIX GraphQL schema varies by workspace; fact sheet types and relation types are meta-model specific.
+
+### Inbound snapshot and fetch profiles
+
+- **`LeanixInventoryFetchProfile`**: `'default'` (minimal fields: id, name, type, optional likec4Id) or `'enterprise'` (requests factSheetAttributes and maps known keys to optional fields). The bridge does not assume every tenant exposes the same schema; with `enterprise`, missing attributes are omitted and the snapshot remains valid.
+- **Enriched optional fields** (when profile is `enterprise` and the tenant exposes them via factSheetAttributes): lifecycle, status, owner, team, responsible, criticality, businessImportance, technology, platform, capabilities, domains, interfaces, tags, categories, customFields. Relations support optional description, metadata, customFields for future use.
 
 ## Contracts
 
