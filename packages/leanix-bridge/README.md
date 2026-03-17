@@ -162,6 +162,35 @@ const mapping = manifestToDrawioLeanixMapping(result.manifest)
 
 The **bridge-context** is a single JSON artifact that projects the current bridge state for downstream consumers (e.g. tooling or future AI/MCP layers). It is **not** a raw dump: it contains manifest, dry-run, optional snapshot/reconciliation/sync-plan and derived reports (drift, impact, governance), plus a minimal **semantic** projection (entities, relations, views). It does **not** include Draw.io XML or layout. Generate it with `likec4 gen leanix context -o out/bridge`; the CLI writes `bridge-context.json` and, when inputs exist, drift-report.json, impact-report.json, governance-report.json, and adr.md.
 
+### Deterministic intelligence functions (PR D)
+
+Pure, testable functions over `BridgeContext`. No LLM; structured JSON first, optional text summary second. All take `context: BridgeContext` and return a typed result with `available: boolean` when the operation can be performed.
+
+| Function | Description | Result when available |
+|----------|-------------|------------------------|
+| **`explainImpact(context)`** | Impact of applying sync (what would change). Uses `context.impactReport` or builds from `context.syncPlan`. | `ExplainImpactResult`: `report?: ImpactReport`, `summary?: string` |
+| **`detectDrift(context)`** | Drift between LikeC4 and LeanIX. Uses `context.driftReport` or builds from `context.reconciliation`. | `DetectDriftResult`: `report?: DriftReport`, `summary?: string` |
+| **`listUnmatched(context)`** | Unmatched entities (in LikeC4 only, in LeanIX only, ambiguous). Requires `context.reconciliation`. | `ListUnmatchedResult`: `unmatchedInLikec4`, `unmatchedInLeanix`, `ambiguous`, `summary` |
+| **`explainReconciliation(context)`** | Matched/unmatched counts and short description. Requires `context.reconciliation`. | `ExplainReconciliationResult`: `summary`, `description` |
+| **`generateAdrFromContext(context)`** | ADR-style markdown from reconciliation and/or drift (optional impact). | `GenerateAdrFromContextResult`: `markdown?: string` |
+| **`checkGovernance(context)`** | Governance checks on reconciliation. Uses `context.governanceReport` or runs from `context.reconciliation`. | `CheckGovernanceResult`: `report?: GovernanceReport`, `summary?: string` |
+| **`summarizeEnterpriseContext(context)`** | Structured summary: counts, drift status, governance pass/fail, one-paragraph text. Always available. | `SummarizeEnterpriseContextResult`: `projectId`, `mappingProfile`, `entityCount`, `relationCount`, `viewCount`, `hasReconciliation`, `hasSnapshot`, `driftStatus?`, `governancePassed?`, `summaryText` |
+
+Import from `@likec4/leanix-bridge`:
+
+```ts
+import {
+  buildBridgeContext,
+  checkGovernance,
+  detectDrift,
+  explainImpact,
+  explainReconciliation,
+  generateAdrFromContext,
+  listUnmatched,
+  summarizeEnterpriseContext,
+} from '@likec4/leanix-bridge'
+```
+
 ## Contracts
 
 - **canonicalId**: LikeC4 FQN (e.g. `cloud.backend.api`).

@@ -126,3 +126,22 @@ export type {
   SemanticRelation,
   SemanticView,
 } from './bridge-context'
+
+export {
+  checkGovernance,
+  detectDrift,
+  explainImpact,
+  explainReconciliation,
+  generateAdrFromContext,
+  listUnmatched,
+  summarizeEnterpriseContext,
+} from './intelligence'
+export type {
+  CheckGovernanceResult,
+  DetectDriftResult,
+  ExplainImpactResult,
+  ExplainReconciliationResult,
+  GenerateAdrFromContextResult,
+  ListUnmatchedResult,
+  SummarizeEnterpriseContextResult,
+} from './intelligence'
