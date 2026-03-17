@@ -23,7 +23,7 @@ describe('explainImpact', () => {
     expect(result.summary).toBeUndefined()
   })
 
-  it('returns impact when context has impactReport', () => {
+  it('returns available: false when context has reconciliation but no impactReport or syncPlan', () => {
     const ctx = contextWithReconciliation()
     expect(ctx.impactReport).toBeUndefined()
     const result = explainImpact(ctx)
