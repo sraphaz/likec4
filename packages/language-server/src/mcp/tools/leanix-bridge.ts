@@ -47,6 +47,17 @@ function loadBridgeContext(workspaceFsPath: string, bridgeOutDir: string): Bridg
   }
 }
 
+function withBridgeContext<T>(
+  workspaceFsPath: string,
+  bridgeOutDir: string | undefined,
+  fn: (ctx: BridgeContext) => T,
+): T | { error: string } {
+  const outDir = bridgeOutDir ?? BRIDGE_OUTDIR_DEFAULT
+  const ctx = loadBridgeContext(workspaceFsPath, outDir)
+  if ('error' in ctx) return { error: ctx.error }
+  return fn(ctx)
+}
+
 export const summarizeEnterpriseContextTool = likec4Tool({
   name: 'leanix-summarize-enterprise-context',
   description: `
@@ -58,10 +69,11 @@ Returns JSON: projectId, mappingProfile, entityCount, relationCount, viewCount, 
   outputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, title: 'Summarize LeanIX bridge context' },
 }, async (languageServices, args) => {
-  const outDir = args.bridgeOutDir ?? BRIDGE_OUTDIR_DEFAULT
-  const ctx = loadBridgeContext(languageServices.workspaceUri.fsPath, outDir)
-  if ('error' in ctx) return { error: ctx.error }
-  return summarizeEnterpriseContext(ctx)
+  return withBridgeContext(
+    languageServices.workspaceUri.fsPath,
+    args.bridgeOutDir,
+    summarizeEnterpriseContext,
+  )
 })
 
 export const detectDriftTool = likec4Tool({
@@ -71,10 +83,7 @@ export const detectDriftTool = likec4Tool({
   outputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, title: 'Detect LeanIX drift' },
 }, async (languageServices, args) => {
-  const outDir = args.bridgeOutDir ?? BRIDGE_OUTDIR_DEFAULT
-  const ctx = loadBridgeContext(languageServices.workspaceUri.fsPath, outDir)
-  if ('error' in ctx) return { error: ctx.error }
-  return detectDrift(ctx)
+  return withBridgeContext(languageServices.workspaceUri.fsPath, args.bridgeOutDir, detectDrift)
 })
 
 export const explainImpactTool = likec4Tool({
@@ -84,10 +93,7 @@ export const explainImpactTool = likec4Tool({
   outputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, title: 'Explain LeanIX sync impact' },
 }, async (languageServices, args) => {
-  const outDir = args.bridgeOutDir ?? BRIDGE_OUTDIR_DEFAULT
-  const ctx = loadBridgeContext(languageServices.workspaceUri.fsPath, outDir)
-  if ('error' in ctx) return { error: ctx.error }
-  return explainImpact(ctx)
+  return withBridgeContext(languageServices.workspaceUri.fsPath, args.bridgeOutDir, explainImpact)
 })
 
 export const listUnmatchedTool = likec4Tool({
@@ -98,10 +104,7 @@ export const listUnmatchedTool = likec4Tool({
   outputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, title: 'List LeanIX unmatched entities' },
 }, async (languageServices, args) => {
-  const outDir = args.bridgeOutDir ?? BRIDGE_OUTDIR_DEFAULT
-  const ctx = loadBridgeContext(languageServices.workspaceUri.fsPath, outDir)
-  if ('error' in ctx) return { error: ctx.error }
-  return listUnmatched(ctx)
+  return withBridgeContext(languageServices.workspaceUri.fsPath, args.bridgeOutDir, listUnmatched)
 })
 
 export const explainReconciliationTool = likec4Tool({
@@ -111,10 +114,11 @@ export const explainReconciliationTool = likec4Tool({
   outputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, title: 'Explain LeanIX reconciliation' },
 }, async (languageServices, args) => {
-  const outDir = args.bridgeOutDir ?? BRIDGE_OUTDIR_DEFAULT
-  const ctx = loadBridgeContext(languageServices.workspaceUri.fsPath, outDir)
-  if ('error' in ctx) return { error: ctx.error }
-  return explainReconciliation(ctx)
+  return withBridgeContext(
+    languageServices.workspaceUri.fsPath,
+    args.bridgeOutDir,
+    explainReconciliation,
+  )
 })
 
 export const checkGovernanceTool = likec4Tool({
@@ -124,10 +128,11 @@ export const checkGovernanceTool = likec4Tool({
   outputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, title: 'Check LeanIX governance' },
 }, async (languageServices, args) => {
-  const outDir = args.bridgeOutDir ?? BRIDGE_OUTDIR_DEFAULT
-  const ctx = loadBridgeContext(languageServices.workspaceUri.fsPath, outDir)
-  if ('error' in ctx) return { error: ctx.error }
-  return checkGovernance(ctx)
+  return withBridgeContext(
+    languageServices.workspaceUri.fsPath,
+    args.bridgeOutDir,
+    checkGovernance,
+  )
 })
 
 export const generateAdrTool = likec4Tool({
@@ -137,8 +142,9 @@ export const generateAdrTool = likec4Tool({
   outputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, title: 'Generate LeanIX ADR' },
 }, async (languageServices, args) => {
-  const outDir = args.bridgeOutDir ?? BRIDGE_OUTDIR_DEFAULT
-  const ctx = loadBridgeContext(languageServices.workspaceUri.fsPath, outDir)
-  if ('error' in ctx) return { error: ctx.error }
-  return generateAdrFromContext(ctx)
+  return withBridgeContext(
+    languageServices.workspaceUri.fsPath,
+    args.bridgeOutDir,
+    generateAdrFromContext,
+  )
 })
