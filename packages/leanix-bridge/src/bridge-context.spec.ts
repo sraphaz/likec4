@@ -3,26 +3,19 @@ import {
   BRIDGE_CONTEXT_ARTIFACT_NAMES,
   buildBridgeContext,
 } from './bridge-context'
-import { createFixtureModel } from './fixture-model'
-import type { LeanixInventorySnapshot } from './leanix-inventory-snapshot'
-import { reconcileInventoryWithManifest } from './reconcile'
-import { toBridgeManifest } from './to-bridge-manifest'
-import { toLeanixInventoryDryRun } from './to-leanix-inventory-dry-run'
-
-const FIXED_DATE = '2025-01-15T12:00:00.000Z'
+import {
+  contextWithReconciliation,
+  createMinimalSyncPlan,
+  FIXED_DATE,
+  minimalContext,
+} from './bridge-context-fixtures'
 
 describe('buildBridgeContext', () => {
-  const model = createFixtureModel()
-  const manifest = toBridgeManifest(model, { generatedAt: FIXED_DATE, mappingProfile: 'default' })
-  const dryRun = toLeanixInventoryDryRun(model, { generatedAt: FIXED_DATE, mappingProfile: 'default' })
-
   it('builds context with minimal inputs (manifest + dryRun)', () => {
-    const ctx = buildBridgeContext({ manifest, dryRun })
+    const ctx = minimalContext()
     expect(ctx.generatedAt).toBe(FIXED_DATE)
     expect(ctx.projectId).toBe('test-project')
     expect(ctx.mappingProfile).toBe('default')
-    expect(ctx.manifest).toBe(manifest)
-    expect(ctx.dryRun).toBe(dryRun)
     expect(ctx.semantic.entities).toHaveLength(3)
     expect(ctx.semantic.relations).toHaveLength(2)
     expect(ctx.semantic.views).toHaveLength(2)
@@ -34,21 +27,8 @@ describe('buildBridgeContext', () => {
   })
 
   it('builds context with reconciliation and derives drift and governance', () => {
-    const snapshot: LeanixInventorySnapshot = {
-      generatedAt: FIXED_DATE,
-      factSheets: [
-        { id: 'fs-1', name: 'Cloud', type: 'Application' },
-        { id: 'fs-2', name: 'Backend', type: 'ITComponent' },
-      ],
-      relations: [],
-    }
-    const reconciliation = reconcileInventoryWithManifest(snapshot, manifest)
-    const ctx = buildBridgeContext({
-      manifest,
-      dryRun,
-      reconciliation,
-    })
-    expect(ctx.reconciliation).toBe(reconciliation)
+    const ctx = contextWithReconciliation()
+    expect(ctx.reconciliation).toBeDefined()
     expect(ctx.driftReport).toBeDefined()
     expect(ctx.driftReport?.status).toBeDefined()
     expect(ctx.governanceReport).toBeDefined()
@@ -56,28 +36,43 @@ describe('buildBridgeContext', () => {
   })
 
   it('attaches optional artifacts when provided', () => {
+    const ctx = minimalContext()
     const artifacts = { manifest: 'manifest.json', bridgeContext: 'bridge-context.json' }
-    const ctx = buildBridgeContext({ manifest, dryRun, artifacts })
-    expect(ctx.artifacts).toEqual(artifacts)
+    const ctxWithArtifacts = buildBridgeContext({
+      manifest: ctx.manifest,
+      dryRun: ctx.dryRun,
+      artifacts,
+    })
+    expect(ctxWithArtifacts.artifacts).toEqual(artifacts)
   })
 
   it('can skip building drift/governance from reconciliation when options set', () => {
-    const snapshot: LeanixInventorySnapshot = {
-      generatedAt: FIXED_DATE,
-      factSheets: [{ id: 'fs-1', name: 'Cloud', type: 'Application' }],
-      relations: [],
-    }
-    const reconciliation = reconcileInventoryWithManifest(snapshot, manifest)
-    const ctx = buildBridgeContext({
-      manifest,
-      dryRun,
-      reconciliation,
+    const ctx = contextWithReconciliation()
+    const reduced = buildBridgeContext({
+      manifest: ctx.manifest,
+      dryRun: ctx.dryRun,
+      reconciliation: ctx.reconciliation,
       buildDriftFromReconciliation: false,
       buildGovernanceFromReconciliation: false,
     })
-    expect(ctx.reconciliation).toBe(reconciliation)
-    expect(ctx.driftReport).toBeUndefined()
-    expect(ctx.governanceReport).toBeUndefined()
+    expect(reduced.reconciliation).toBe(ctx.reconciliation)
+    expect(reduced.driftReport).toBeUndefined()
+    expect(reduced.governanceReport).toBeUndefined()
+  })
+
+  it('builds context with syncPlan and derives impactReport', () => {
+    const ctx = minimalContext()
+    const syncPlan = createMinimalSyncPlan()
+    const ctxWithPlan = buildBridgeContext({
+      manifest: ctx.manifest,
+      dryRun: ctx.dryRun,
+      syncPlan,
+    })
+    expect(ctxWithPlan.syncPlan).toBe(syncPlan)
+    expect(ctxWithPlan.impactReport).toBeDefined()
+    expect(ctxWithPlan.impactReport?.generatedAt).toBe(FIXED_DATE)
+    expect(ctxWithPlan.impactReport?.summary.factSheetsToCreate).toBe(2)
+    expect(ctxWithPlan.impactReport?.impactSummary).toContain('2 fact sheet(s) to create')
   })
 })
 
