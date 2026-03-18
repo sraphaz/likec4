@@ -14,6 +14,8 @@ import type {
   BridgeModelInput,
   BridgeReport,
   LeanixInventoryDryRun,
+  LeanixMappingConfig,
+  MappingProfileId,
 } from '@likec4/leanix-bridge'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
@@ -48,12 +50,25 @@ export type BridgeArtifacts = {
   report: BridgeReport
 }
 
+export type BuildBridgeArtifactsOptions = {
+  mappingProfile?: MappingProfileId
+  mappingOverrides?: LeanixMappingConfig | null
+}
+
 /**
  * Builds manifest, dry-run inventory and report from a bridge model (no live API).
  */
-export function buildBridgeArtifacts(bridgeModel: BridgeModelInput): BridgeArtifacts {
-  const manifest = toBridgeManifest(bridgeModel, { mappingProfile: DEFAULT_MAPPING_PROFILE })
-  const dryRun = toLeanixInventoryDryRun(bridgeModel, { mappingProfile: DEFAULT_MAPPING_PROFILE })
+export function buildBridgeArtifacts(
+  bridgeModel: BridgeModelInput,
+  options?: BuildBridgeArtifactsOptions,
+): BridgeArtifacts {
+  const profile = options?.mappingProfile ?? DEFAULT_MAPPING_PROFILE
+  const manifest = toBridgeManifest(bridgeModel, { mappingProfile: profile })
+  const dryRunOptions: Parameters<typeof toLeanixInventoryDryRun>[1] = { mappingProfile: profile }
+  if (options?.mappingOverrides != null) {
+    dryRunOptions.mapping = options.mappingOverrides
+  }
+  const dryRun = toLeanixInventoryDryRun(bridgeModel, dryRunOptions)
   const report = buildBridgeReport(manifest, dryRun)
   return { manifest, dryRun, report }
 }

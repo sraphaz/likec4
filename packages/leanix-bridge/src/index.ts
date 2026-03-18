@@ -33,10 +33,19 @@ export {
   FALLBACK_FACT_SHEET_TYPE,
   FALLBACK_RELATION_TYPE,
   getFactSheetType,
+  getMappingProfile,
   getRelationType,
+  mergeMappingProfile,
   mergeWithDefault,
+  registerMappingProfile,
+  resolveMappingConfig,
 } from './mapping'
-export type { LeanixMappingConfig } from './mapping'
+export type {
+  LeanixMappingConfig,
+  LeanixMappingCore,
+  MappingProfileId,
+  ResolvedLeanixMapping,
+} from './mapping'
 
 export type { BridgeElementLike, BridgeModelInput, BridgeRelationLike, BridgeViewLike } from './model-input'
 
@@ -76,6 +85,7 @@ export { fetchLeanixInventorySnapshot } from './leanix-inventory-snapshot'
 export type {
   FetchLeanixInventorySnapshotOptions,
   LeanixFactSheetSnapshotItem,
+  LeanixInventoryFetchProfile,
   LeanixInventorySnapshot,
   LeanixRelationSnapshotItem,
 } from './leanix-inventory-snapshot'

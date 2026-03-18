@@ -17,6 +17,8 @@ export type LeanixInventorySnapshotHandlerParams = {
   outdir: string
   /** Custom attribute key to read likec4Id from fact sheets (e.g. "likec4Id"). */
   likec4IdAttribute?: string
+  /** Fetch profile: default (minimal) or enterprise (enriched optional fields from factSheetAttributes). */
+  profile?: 'default' | 'enterprise'
 }
 
 /**
@@ -32,16 +34,19 @@ export async function leanixInventorySnapshotHandler(
 ): Promise<void> {
   const logger = createLikeC4Logger('c4:gen:leanix:inventory')
   const timer = startTimer(logger)
-  const { outdir, likec4IdAttribute } = params
+  const { outdir, likec4IdAttribute, profile } = params
 
   try {
     const client = requireLeanixClient()
-    const opts: { likec4IdAttribute?: string } = {}
+    const opts: { likec4IdAttribute?: string; profile?: 'default' | 'enterprise' } = {}
     if (
       typeof likec4IdAttribute === 'string' &&
       likec4IdAttribute.trim() !== ''
     ) {
       opts.likec4IdAttribute = likec4IdAttribute.trim()
+    }
+    if (profile === 'default' || profile === 'enterprise') {
+      opts.profile = profile
     }
     const snapshot = await fetchLeanixInventorySnapshot(client, opts)
 

@@ -154,9 +154,24 @@ const codegenCmd = (yargs: yargs.Argv) => {
                       })
                       .option('project', project)
                       .option('use-dot', useDotBin)
+                      .option('mapping-profile', {
+                        type: 'string',
+                        choices: ['default', 'enterprise'],
+                        desc: 'mapping profile: default (current behavior) or enterprise',
+                      })
+                      .option('mapping-override', {
+                        type: 'string',
+                        desc: 'path to JSON file with mapping overrides (merged onto profile)',
+                        normalize: true,
+                        coerce: resolve,
+                      })
                       .example(
                         `${k.green('$0 gen leanix dry-run -o out/bridge')}`,
                         k.gray('Write bridge artifacts to out/bridge'),
+                      )
+                      .example(
+                        `${k.green('$0 gen leanix dry-run --mapping-profile enterprise')}`,
+                        k.gray('Use enterprise mapping profile'),
                       ),
                   async args => {
                     await leanixDryRunHandler({
@@ -164,6 +179,10 @@ const codegenCmd = (yargs: yargs.Argv) => {
                       outdir: args.outdir ?? resolve(process.cwd(), 'out', 'bridge'),
                       project: args.project,
                       useDotBin: args.useDotBin,
+                      ...(args.mappingProfile != null && {
+                        mappingProfile: args.mappingProfile as 'default' | 'enterprise',
+                      }),
+                      ...(args.mappingOverride != null && { mappingOverridePath: args.mappingOverride }),
                     })
                   },
                 )
@@ -181,6 +200,12 @@ const codegenCmd = (yargs: yargs.Argv) => {
                         type: 'string',
                         desc: 'custom LeanIX attribute key for likec4Id (e.g. "likec4Id")',
                       })
+                      .option('profile', {
+                        type: 'string',
+                        choices: ['default', 'enterprise'],
+                        desc:
+                          'fetch profile: default (minimal fields) or enterprise (enriched optional fields from factSheetAttributes)',
+                      })
                       .example(
                         `${k.green('$0 gen leanix inventory -o out/bridge')}`,
                         k.gray('Requires LEANIX_API_TOKEN'),
@@ -189,6 +214,7 @@ const codegenCmd = (yargs: yargs.Argv) => {
                     await leanixInventorySnapshotHandler({
                       outdir: args.outdir ?? resolve(process.cwd(), 'out', 'bridge'),
                       ...(args.likec4IdAttribute != null ? { likec4IdAttribute: args.likec4IdAttribute } : {}),
+                      ...(args.profile != null ? { profile: args.profile as 'default' | 'enterprise' } : {}),
                     })
                   },
                 )
