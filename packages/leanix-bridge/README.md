@@ -41,6 +41,10 @@ likec4 gen leanix inventory -o out/bridge
 likec4 gen leanix inventory -o out/bridge --profile enterprise
 # Run reconciliation between manifest and LeanIX inventory, output to out/bridge
 likec4 gen leanix reconcile -o out/bridge
+
+# Build bridge-context.json (and derived reports when inputs exist)
+# Reads manifest + dry-run from outdir, or builds from workspace; writes bridge-context.json, optionally drift/impact/governance reports and adr.md
+likec4 gen leanix context -o out/bridge
 ```
 
 Export Draw.io with LeanIX profile (includes bridge-managed metadata for round-trip sync):
@@ -137,6 +141,8 @@ const mapping = manifestToDrawioLeanixMapping(result.manifest)
 - **`generateAdrFromReconciliation(reconciliation, options?)`** – generates ADR-style markdown from a reconciliation result. **`generateAdrFromDriftReport(drift, options?)`** – generates ADR-style markdown from a drift report.
 - **`runGovernanceChecks(reconciliation, options?)`** – runs configurable governance rules on a `ReconciliationResult`; accepts optional `GovernanceCheckOptions` and returns `GovernanceReport` with pass/fail and violation messages.
 - **`isBridgeManifest(obj)`** / **`isLeanixInventorySnapshot(obj)`** – type guards for parsed JSON (e.g. from CLI artifact files).
+- **`buildBridgeContext(input)`** – builds the **BridgeContext** artifact: a compact, machine-usable projection for AI/governance consumers. Input: `manifest`, `dryRun`, and optionally `workspaceId`, `inventorySnapshot`, `reconciliation`, `syncPlan`; when reconciliation/syncPlan are provided, drift report, impact report, and governance report are derived. Returns `BridgeContext` (no Draw.io XML or layout blobs). Use `likec4 gen leanix context` to write `bridge-context.json` and derived reports to disk.
+- **`BRIDGE_CONTEXT_ARTIFACT_NAMES`** – centralized artifact file names: `manifest.json`, `leanix-dry-run.json`, `report.json`, `leanix-inventory-snapshot.json`, `reconciliation-report.json`, `drift-report.json`, `impact-report.json`, `governance-report.json`, `adr.md`, `sync-plan.json`, `bridge-context.json`.
 
 ### Mapping profiles and overrides
 
@@ -151,6 +157,10 @@ const mapping = manifestToDrawioLeanixMapping(result.manifest)
 
 - **`LeanixInventoryFetchProfile`**: `'default'` (minimal fields: id, name, type, optional likec4Id) or `'enterprise'` (requests factSheetAttributes and maps known keys to optional fields). The bridge does not assume every tenant exposes the same schema; with `enterprise`, missing attributes are omitted and the snapshot remains valid.
 - **Enriched optional fields** (when profile is `enterprise` and the tenant exposes them via factSheetAttributes): lifecycle, status, owner, team, responsible, criticality, businessImportance, technology, platform, capabilities, domains, interfaces, tags, categories, customFields. Relations support optional description, metadata, customFields for future use.
+
+### Bridge context (PR C)
+
+The **bridge-context** is a single JSON artifact that projects the current bridge state for downstream consumers (e.g. tooling or future AI/MCP layers). It is **not** a raw dump: it contains manifest, dry-run, optional snapshot/reconciliation/sync-plan and derived reports (drift, impact, governance), plus a minimal **semantic** projection (entities, relations, views). It does **not** include Draw.io XML or layout. Generate it with `likec4 gen leanix context -o out/bridge`; the CLI writes `bridge-context.json` and, when inputs exist, drift-report.json, impact-report.json, governance-report.json, and adr.md.
 
 ## Contracts
 
