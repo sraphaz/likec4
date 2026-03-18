@@ -17,12 +17,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Optional string field: if present must be string. */
 function isOptionalString(value: unknown): boolean {
-  return value === undefined || value === null || typeof value === 'string'
+  return value === undefined || typeof value === 'string'
 }
 
 /** Optional array of strings: if present must be string[]. */
 function isOptionalStringArray(value: unknown): boolean {
-  if (value === undefined || value === null) return true
+  if (value === undefined) return true
   if (!Array.isArray(value)) return false
   return value.every(v => typeof v === 'string')
 }
@@ -38,9 +38,9 @@ function isCustomFieldValue(value: unknown): boolean {
 
 /** Optional record for customFields: if present must be object with string/string[]/undefined values. */
 function isOptionalCustomFields(value: unknown): boolean {
-  if (value === undefined || value === null) return true
-  if (typeof value !== 'object' || value === null) return false
-  return Object.values(value as Record<string, unknown>).every(isCustomFieldValue)
+  if (value === undefined) return true
+  if (!isRecord(value) || Array.isArray(value)) return false
+  return Object.values(value).every(isCustomFieldValue)
 }
 
 function isManifestEntity(value: unknown): value is ManifestEntity {
@@ -106,6 +106,11 @@ function isLeanixRelationSnapshotItem(value: unknown): value is LeanixRelationSn
     return false
   }
   if (value['id'] !== undefined && typeof value['id'] !== 'string') return false
+  if (value['description'] !== undefined && typeof value['description'] !== 'string') return false
+  if (value['metadata'] !== undefined && (!isRecord(value['metadata']) || Array.isArray(value['metadata']))) {
+    return false
+  }
+  if (value['customFields'] !== undefined && !isOptionalCustomFields(value['customFields'])) return false
   return true
 }
 

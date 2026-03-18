@@ -99,6 +99,21 @@ export type ResolvedLeanixMapping =
   & LeanixMappingCore
   & Pick<LeanixMappingConfig, 'customIdentityFields' | 'governanceFields'>
 
+function cloneResolvedMapping(mapping: ResolvedLeanixMapping): ResolvedLeanixMapping {
+  const out: ResolvedLeanixMapping = {
+    factSheetTypes: { ...mapping.factSheetTypes },
+    relationTypes: { ...mapping.relationTypes },
+    metadataToFields: { ...mapping.metadataToFields },
+  }
+  if (mapping.customIdentityFields != null) {
+    out.customIdentityFields = { ...mapping.customIdentityFields }
+  }
+  if (mapping.governanceFields != null) {
+    out.governanceFields = { ...mapping.governanceFields }
+  }
+  return out
+}
+
 const profileRegistry = new Map<string, ResolvedLeanixMapping>([
   ['default', DEFAULT_LEANIX_MAPPING],
   ['enterprise', ENTERPRISE_LEANIX_MAPPING],
@@ -107,9 +122,11 @@ const profileRegistry = new Map<string, ResolvedLeanixMapping>([
 /**
  * Returns the full mapping config for a registered profile id.
  * Built-in: 'default' | 'enterprise'. Custom ids only if registered via registerMappingProfile.
+ * Returns a clone so mutating the result does not affect the registry.
  */
 export function getMappingProfile(id: string): ResolvedLeanixMapping | null {
-  return profileRegistry.get(id) ?? null
+  const profile = profileRegistry.get(id)
+  return profile ? cloneResolvedMapping(profile) : null
 }
 
 /**
@@ -129,7 +146,7 @@ export function mergeMappingProfile(
   overrides?: LeanixMappingConfig | null,
 ): ResolvedLeanixMapping {
   if (!overrides) {
-    return { ...base }
+    return cloneResolvedMapping(base)
   }
   const out: ResolvedLeanixMapping = {
     factSheetTypes: { ...base.factSheetTypes, ...overrides.factSheetTypes },
