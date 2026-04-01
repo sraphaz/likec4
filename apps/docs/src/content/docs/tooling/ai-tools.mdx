@@ -1,0 +1,210 @@
+﻿---
+title: AI Tools
+description: Agent skills and MCP Server for AI-powered architecture modeling
+head:
+  - tag: title
+    content: AI Tools | LikeC4
+sidebar:
+  order: 5
+---
+
+import { Aside, CardGrid, LinkCard, TabItem as Tab, Tabs } from '@astrojs/starlight/components';
+
+LikeC4 provides two complementary tools for AI-powered development: **Agent Skills** for teaching AI assistants the DSL syntax, and an **MCP Server** for querying your architecture model. **LeanIX bridge workflows** (generate manifest/dry-run, sync, Draw.io `--profile leanix`) are CLI- and package-driven — MCP does not replace those commands.
+
+## Agent Skills
+
+Agent skills are DSL references that AI coding assistants load automatically when editing `.c4`/`.likec4` files.
+They teach agents correct LikeC4 syntax, patterns, and validation workflows — so they can write DSL code without hallucinating.
+
+### Install into any project
+
+```sh
+npx skills add https://likec4.dev/
+```
+
+This uses the <a href="https://www.skillsdk.dev/" target="_blank">Agent Skills Discovery</a> protocol. Available skills:
+
+| Skill | Description |
+|-------|-------------|
+| `likec4-dsl` | Complete DSL reference — specification, model, views, deployment, predicates, examples |
+
+Works with Claude Code, Cursor, Windsurf, and other agents that support the protocol.
+
+### Draw.io, LeanIX bridge, and skills
+
+- **Draw.io (default)** is produced with `likec4 export drawio` (no LeanIX-specific cell metadata).
+- **Draw.io LeanIX profile** adds bridge-managed styles (`bridgeManaged=true`, `likec4Id`, `likec4RelationId`, …): use `likec4 export drawio --profile leanix -o ./diagrams`.
+- **LeanIX artifacts** (manifest, dry-run, sync) come from the **CLI**, not from MCP: `likec4 gen leanix dry-run`, `likec4 sync leanix`, etc. See the [`@likec4/leanix-bridge` README](https://github.com/likec4/likec4/blob/main/packages/leanix-bridge/README.md).
+
+The published skill `likec4-dsl` includes `references/bridge-leanix-drawio.md` for exact command boundaries and round-trip notes.
+
+## MCP Server
+
+LikeC4 <a href="https://modelcontextprotocol.io" target="_blank">MCP Server</a> provides knowledge of your LikeC4 model to LLMs.
+This enables you to query your model in natural language:
+
+> _"Lookup LikeC4 model and list all incoming relationships of the backend api"_
+
+> _"What nested elements of the 'Backend' have relations with the legacy api"_
+
+> _"List all elements tagged legacy from team1 project"_
+
+> _"What technologies are used for ui (consider all elements with browser shape)"_
+
+> _"Export to CSV all relationships between Backend and Amazon SQS"_
+
+### Usage
+
+Three options are available:
+- Use extension's built-in MCP Server
+- Use `likec4 mcp` CLI
+- Use `@likec4/mcp` package
+
+#### Using extension
+
+When [LikeC4 extension](/tooling/editors/) is installed, MCP Server can be enabled from the extension <a href="vscode://settings/likec4.mcp.enabled" target="_blank">settings</a>.
+
+To configure MCP Server:
+
+<Tabs syncKey="label">
+  <Tab label='VSCode'>
+    Create `.vscode/mcp.json`:
+
+    ```json
+    {
+      "servers": {
+        "likec4": {
+          "type": "sse",
+          "url": "http://localhost:33335/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab label='Cursor'>
+
+    Create `.cursor/mcp.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "likec4": {
+          "url": "http://localhost:33335/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab label='Windsurf'>
+
+    See [Windsurf documentation](https://docs.windsurf.com/windsurf/mcp) for details:
+
+    ```json
+    {
+      "mcpServers": {
+        "likec4": {
+          "serverUrl": "http://localhost:33335/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+You can change port in the settings.
+
+:::caution
+The MCP server is only available when the extension is active.
+The extension activates automatically once you open any LikeC4 source file.
+
+If it doesn't show up, try refreshing the list of available MCP servers in your editor
+:::
+
+#### Using CLI
+
+If you have installed [`likec4`](/tooling/cli) CLI, you can start MCP server with `stdio` transport:
+
+```sh
+likec4 mcp
+# or
+likec4 mcp --stdio
+```
+
+Start MCP server with `http` transport on port `33335` (default) at `./src` folder:
+
+```sh
+likec4 mcp --http ./src
+```
+
+Start MCP server with `http` transport on port `1234`:
+
+```sh
+likec4 mcp -p 1234
+```
+
+#### Using `@likec4/mcp` package
+
+Example configuration:
+
+```json
+{
+  "mcpServers": {
+    "likec4": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@likec4/mcp"
+      ],
+      "env": {
+        "LIKEC4_WORKSPACE": "${workspaceFolder}"
+      }
+    }
+  }
+}
+```
+
+This package starts MCP server using [`stdio`](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#stdio) transport.
+
+If `LIKEC4_WORKSPACE` environment variable is not set, the current directory will be used as workspace.
+
+:::tip
+You can also use `@likec4/mcp` package as CLI (this package is smaller than `likec4`):
+
+```sh
+npm install -g @likec4/mcp
+
+# Start MCP server with streamable http transport
+likec4-mcp-server --http --port 1234 /path/to/workspace
+
+# See available options
+likec4-mcp-server -h
+```
+
+Disable watch mode with `--no-watch` to consume less resources, if you have static workspace.
+:::
+
+### Available tools
+
+| Tool | Description |
+|------|-------------|
+| `list-projects` | List all LikeC4 projects in the workspace |
+| `read-project-summary` | Project specification, configuration, all elements, deployment nodes and views |
+| `search-element` | Search elements and deployment nodes by id/title/kind/shape/tags/metadata |
+| `read-element` | Full element details including relationships, views, deployments, metadata |
+| `read-deployment` | Details of a deployment node or deployed instance |
+| `read-view` | Full view details (nodes/edges) and source location |
+| `find-relationships` | Direct and indirect relationships between two elements |
+| `query-graph` | Query element hierarchy (ancestors, descendants, siblings, children, parent) and single-hop relationships (incomers, outgoers) |
+| `query-incomers-graph` | Recursive BFS graph of all upstream dependencies/producers |
+| `query-outgoers-graph` | Recursive BFS graph of all downstream consumers/dependents |
+| `query-by-metadata` | Search elements by metadata key-value pairs (exact/contains/exists) |
+| `query-by-tags` | Tag filtering with boolean logic (allOf, anyOf, noneOf) |
+| `query-by-tag-pattern` | Search elements by tag patterns using prefix, contains, or suffix matching |
+| `find-relationship-paths` | Discover all multi-hop relationship chains between two elements via BFS |
+| `batch-read-elements` | Read full details for multiple elements in a single request |
+| `subgraph-summary` | Summarize descendants of an element with depth, metadata, and relationship counts |
+| `element-diff` | Compare two elements and show differences in properties, tags, metadata, and relationships |
+| `open-view` | Opens the LikeC4 view panel (editor only) |
+
+Check out [README](https://github.com/likec4/likec4/blob/main/packages/mcp/README.md) for more details.

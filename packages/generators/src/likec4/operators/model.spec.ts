@@ -166,6 +166,19 @@ describe('model', () => {
     `)
   })
 
+  // Regression guard: model text generation must preserve explicit element titles (see bridge/UI consumers).
+  it('should preserve actor title in generated model text', () => {
+    expectModel(
+      builder.model(({ actor }, _) =>
+        _(
+          actor('alice', {
+            title: 'Alice Title',
+          }),
+        )
+      ),
+    ).toContain(`actor 'Alice Title'`)
+  })
+
   it('should print relationships', () => {
     expectModel(
       builder.model(({ actor, system, component, rel }, _) =>

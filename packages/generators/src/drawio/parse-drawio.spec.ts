@@ -192,6 +192,7 @@ const drawioWithBridgeManagedIds = `<?xml version="1.0" encoding="UTF-8"?>
   </diagram>
 </mxfile>`
 
+// Aligns with leanix export: vertices with likec4Id + edge with likec4RelationId → stable relationship in parsed DSL.
 test('parse DrawIO to LikeC4 - bridge-managed likec4Id yields stable FQN identity', () => {
   const result = parseDrawioToLikeC4(drawioWithBridgeManagedIds)
   expect(result).toContain('Frontend')
