@@ -21,6 +21,7 @@ export const FALLBACK_RELATION_TYPE = 'depends on'
 
 const MAPPING_TOP_KEYS = new Set(['factSheetTypes', 'relationTypes', 'metadataToFields'])
 
+/** True when `value` is a non-array object whose values are all strings. */
 function isPlainObjectRecordOfStrings(value: unknown): value is Record<string, string> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false
