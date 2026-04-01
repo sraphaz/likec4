@@ -41,6 +41,8 @@ Custom **LeanIX mapping** merges over defaults (`factSheetTypes`, `relationTypes
 - **MCP** (`likec4 mcp`, `@likec4/mcp`) exposes **read/query** tools over the LikeC4 workspace model (elements, views, relationships). It does **not** replace `likec4 gen leanix` or `likec4 sync leanix`.
 - For LeanIX artifacts, Draw.io leanix profile, or manifest dry-run, use the **CLI** (or programmatic `@likec4/leanix-bridge`) as documented above.
 
-## Internal playbook
+## Official documentation
 
-For review checklists and drift vocabulary, see `docs/PLAYBOOK-bridge-drawio-ai.md` in this repository (contributor-facing).
+- **Published:** [AI Tools](https://likec4.dev/tooling/ai-tools/) on likec4.dev (Draw.io, LeanIX bridge, MCP vs bridge).
+- **In-repo:** `apps/docs/src/content/docs/tooling/ai-tools.mdx` (Starlight source).
+- **Bridge package:** `packages/leanix-bridge/README.md`.
