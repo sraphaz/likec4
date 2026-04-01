@@ -1,37 +1,37 @@
-# Playbook: bridge, Draw.io (LeanIX profile) e assistentes de IA
+# Playbook: bridge, Draw.io (LeanIX profile), and AI assistants
 
-Documento operacional para humanos e agentes que mexem em **LeanIX bridge**, **export Draw.io** e **skills/docs de IA**. Não substitui o README de `@likec4/leanix-bridge` nem `likec4 --help`.
+Operational guide for humans and agents working on the **LeanIX bridge**, **Draw.io export**, and **AI-oriented docs/skills**. It does not replace the `@likec4/leanix-bridge` README or `likec4 --help`.
 
-## 1. Quando usar o quê
+## 1. Which tool for which job
 
-| Necessidade                                           | Ferramenta                                                           |
-| ----------------------------------------------------- | -------------------------------------------------------------------- |
-| Validar / exportar DSL genérico                       | `likec4 validate`, `likec4 export …` (ver skill `references/cli.md`) |
-| Artefactos bridge (manifest, dry-run, report)         | `likec4 gen leanix dry-run -o out/bridge`                            |
-| Plano ou sync LeanIX                                  | `likec4 sync leanix --dry-run` / `--apply`                           |
-| Draw.io com metadados bridge                          | `likec4 export drawio --profile leanix -o ./diagrams`                |
-| Consultar modelo no IDE (elementos, vistas, relações) | MCP `likec4 mcp` / `@likec4/mcp`                                     |
+| Need                                                    | Tool                                                                 |
+| ------------------------------------------------------- | -------------------------------------------------------------------- |
+| Validate / export generic DSL                           | `likec4 validate`, `likec4 export …` (see skill `references/cli.md`) |
+| Bridge artifacts (manifest, dry-run, report)            | `likec4 gen leanix dry-run -o out/bridge`                            |
+| LeanIX sync plan or apply                               | `likec4 sync leanix --dry-run` / `--apply`                           |
+| Draw.io with bridge metadata                            | `likec4 export drawio --profile leanix -o ./diagrams`                |
+| Query model in the IDE (elements, views, relationships) | MCP `likec4 mcp` / `@likec4/mcp`                                     |
 
-## 2. Revisão e drift (vocabulário)
+## 2. Review and drift (vocabulary)
 
-- **Manifest**: identidade canónica LikeC4 ↔ artefactos bridge (`mappingProfile`, `projectId`, entidades, relações, vistas).
-- **Dry-run LeanIX**: lista tipada de fact sheets / relações derivada do modelo + mapping.
-- **Drift**: diferença entre o que o manifest declara e o inventário LeanIX (reconciliação / relatórios de impacto, conforme fase do bridge).
-- **Draw.io leanix profile**: células com `bridgeManaged=true` e ids estáveis (`likec4Id`, `likec4RelationId`, …); não confundir com export `default`.
+- **Manifest**: canonical LikeC4 identity ↔ bridge artifacts (`mappingProfile`, `projectId`, entities, relations, views).
+- **LeanIX dry-run**: typed list of fact sheets / relations derived from the model and mapping.
+- **Drift**: gap between what the manifest states and LeanIX inventory (reconciliation / impact reports, depending on bridge phase).
+- **Draw.io leanix profile**: cells with `bridgeManaged=true` and stable ids (`likec4Id`, `likec4RelationId`, …); do not confuse with the `default` export profile.
 
-Checklist rápido antes de PR ou sync:
+Quick checklist before a PR or sync:
 
-1. `likec4 validate` no projeto.
-2. Regenerar `out/bridge` se alterou modelo ou mapping.
-3. Se usou Draw.io round-trip, confirmar que o XML ainda contém os atributos esperados do perfil ou comentários `likec4.layout.drawio` quando aplicável.
+1. Run `likec4 validate` on the project.
+2. Regenerate `out/bridge` if the model or mapping changed.
+3. If you used Draw.io round-trip, confirm the XML still has the expected profile attributes or `likec4.layout.drawio` comments where applicable.
 
-## 3. Alinhamento com Agent Skills
+## 3. Alignment with Agent Skills
 
-- O skill `likec4-dsl` deve apontar para `references/bridge-leanix-drawio.md` quando a tarefa for bridge/LeanIX/Draw.io leanix.
-- Não orientar o utilizador a “inventar” JSON de manifest; usar CLI ou API pública do pacote bridge.
+- The `likec4-dsl` skill should point to `references/bridge-leanix-drawio.md` when the task involves bridge, LeanIX, or Draw.io leanix profile.
+- Do not tell users to hand-author manifest JSON; use the CLI or the public `@likec4/leanix-bridge` APIs.
 
-## 4. Ligações
+## 4. Links
 
-- Backlog de integridade: [BACKLOG-skills-drawio-leanix-integrity.md](./BACKLOG-skills-drawio-leanix-integrity.md)
-- Gaps (investigação): [INVESTIGATION-skills-drawio-leanix-alignment.md](./INVESTIGATION-skills-drawio-leanix-alignment.md)
-- Plano (secção 18): [PLAN-ai-ready-bridge-phases.md](./PLAN-ai-ready-bridge-phases.md)
+- Integrity backlog: [BACKLOG-skills-drawio-leanix-integrity.md](./BACKLOG-skills-drawio-leanix-integrity.md)
+- Gap analysis: [INVESTIGATION-skills-drawio-leanix-alignment.md](./INVESTIGATION-skills-drawio-leanix-alignment.md)
+- Plan (section 18, local copy if present): [PLAN-ai-ready-bridge-phases.md](./PLAN-ai-ready-bridge-phases.md)
