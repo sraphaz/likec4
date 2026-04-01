@@ -1,49 +1,49 @@
-# Backlog: integridade Skills ↔ Draw.io ↔ LeanIX
+# Backlog: Skills ↔ Draw.io ↔ LeanIX integrity
 
-Estados: **feito** | pendente
+Status values: **done** | pending
 
 ## A — Skill `likec4-dsl`
 
-| ID | Item                                                      | Estado |
-| -- | --------------------------------------------------------- | ------ |
-| A1 | Referência `references/bridge-leanix-drawio.md`           | feito  |
-| A2 | `description` do skill menciona bridge / Draw.io leanix   | feito  |
-| A3 | Índice de referências com linha para bridge-leanix-drawio | feito  |
-| A4 | `cli.md`: tabela / comandos bridge + link à referência    | feito  |
+| ID | Item                                                 | Status |
+| -- | ---------------------------------------------------- | ------ |
+| A1 | Reference `references/bridge-leanix-drawio.md`       | done   |
+| A2 | Skill `description` mentions bridge / Draw.io leanix | done   |
+| A3 | Reference index row for bridge-leanix-drawio         | done   |
+| A4 | `cli.md`: bridge commands table + link to reference  | done   |
 
-## B — Documentação interna
+## B — Internal documentation
 
-| ID | Item                                    | Estado |
-| -- | --------------------------------------- | ------ |
-| B1 | `docs/PLAYBOOK-bridge-drawio-ai.md`     | feito  |
-| B2 | Playbook: revisão / drift / vocabulário | feito  |
-| B3 | `AGENTS.md` aponta para o playbook      | feito  |
+| ID | Item                                  | Status |
+| -- | ------------------------------------- | ------ |
+| B1 | `docs/PLAYBOOK-bridge-drawio-ai.md`   | done   |
+| B2 | Playbook: review / drift / vocabulary | done   |
+| B3 | `AGENTS.md` links to playbook         | done   |
 
-## C — Código / testes
+## C — Code / tests
 
-| ID | Item                                                                         | Estado       |
-| -- | ---------------------------------------------------------------------------- | ------------ |
-| C1 | Versão bridge alinhada ao pacote (`contracts` / package.json)                | feito (main) |
-| C2 | Teste ou nota explícita: gerador de modelo preserva `title`                  | feito        |
-| C3 | Paridade parse Draw.io: `likec4Id` / `likec4RelationId` documentada em teste | feito        |
-| C4 | Validação de mapping parcial (objeto, chaves, valores string)                | feito        |
+| ID | Item                                                                      | Status         |
+| -- | ------------------------------------------------------------------------- | -------------- |
+| C1 | Bridge version aligned with package (`contracts` / package.json)          | done (on main) |
+| C2 | Test or explicit note: model generator preserves `title`                  | done           |
+| C3 | Draw.io parse parity: `likec4Id` / `likec4RelationId` documented in tests | done           |
+| C4 | Partial mapping validation (object shape, keys, string values)            | done           |
 
 ## D — Docs site (Starlight)
 
-| ID | Item                                      | Estado |
+| ID | Item                                      | Status |
 | -- | ----------------------------------------- | ------ |
-| D1 | `ai-tools.mdx`: Draw.io + LeanIX + bridge | feito  |
-| D2 | `ai-tools.mdx`: MCP vs bridge             | feito  |
+| D1 | `ai-tools.mdx`: Draw.io + LeanIX + bridge | done   |
+| D2 | `ai-tools.mdx`: MCP vs bridge             | done   |
 
 ## E — MCP
 
-| ID | Item                                                   | Estado |
-| -- | ------------------------------------------------------ | ------ |
-| E2 | Nota de vocabulário MCP ↔ skill / bridge no README MCP | feito  |
+| ID | Item                                        | Status |
+| -- | ------------------------------------------- | ------ |
+| E2 | MCP README: vocabulary MCP ↔ skill / bridge | done   |
 
 ## Meta
 
-| ID | Item                                   | Estado |
-| -- | -------------------------------------- | ------ |
-| M1 | Secção 18 do PLAN com ligações válidas | feito  |
-| M2 | Este ficheiro mantido como checklist   | feito  |
+| ID | Item                                                            | Status |
+| -- | --------------------------------------------------------------- | ------ |
+| M1 | PLAN section 18 links valid (when PLAN file is present locally) | done   |
+| M2 | Keep this file as the checklist                                 | done   |
