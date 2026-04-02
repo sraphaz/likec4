@@ -1,7 +1,7 @@
 {
   "name": "likec4",
   "description": "Toolchain for your architecture diagrams",
-  "version": "1.52.0",
+  "version": "1.53.0",
   "license": "MIT",
   "homepage": "https://likec4.dev",
   "author": "Denis Davydkov <denis@davydkov.com>",
@@ -155,7 +155,7 @@
     "chokidar": "catalog:externals",
     "std-env": "catalog:externals",
     "type-fest": "catalog:externals",
-    "vite-plugin-singlefile": "^2.3.0",
+    "vite-plugin-singlefile": "^2.3.2",
     "vite": "catalog:vite",
     "yargs": "17.7.2",
     "nano-spawn": "catalog:externals"

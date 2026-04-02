@@ -2,6 +2,7 @@ import {
   BuildDocuments,
   ChangeView,
   DidChangeModelNotification,
+  DidChangeProjectsNotification,
   DidChangeSnapshotNotification,
   DidRequestOpenViewNotification,
   FetchComputedModel,
@@ -54,11 +55,15 @@ export const useRpc = createSingletonComposable(() => {
       return views ?? []
     },
 
-    async onDidChangeModel(cb: () => void) {
+    onDidChangeModel(cb: (params: DidChangeModelNotification.Params) => void) {
       return useDisposable(client.onNotification(DidChangeModelNotification.type, cb))
     },
 
-    async onRequestOpenView(cb: (params: DidRequestOpenViewNotification.Params) => void) {
+    onDidChangeProjects(cb: () => void) {
+      return useDisposable(client.onNotification(DidChangeProjectsNotification.type, cb))
+    },
+
+    onRequestOpenView(cb: (params: DidRequestOpenViewNotification.Params) => void) {
       return useDisposable(client.onNotification(DidRequestOpenViewNotification.type, cb))
     },
 
@@ -106,10 +111,13 @@ export const useRpc = createSingletonComposable(() => {
       return await queue(() => client.sendRequest(FetchProjectsOverview.req))
     },
 
-    async notifyDidChangeSnapshot(snapshot: vscode.Uri) {
-      await client.sendNotification(DidChangeSnapshotNotification.type, {
-        snapshotUri: client.code2ProtocolConverter.asUri(snapshot),
-      })
+    async notifyDidChangeSnapshot(event: 'update' | 'delete', snapshot: vscode.Uri) {
+      await client.sendNotification(
+        DidChangeSnapshotNotification.type,
+        {
+          [`${event}` as const]: client.code2ProtocolConverter.asUri(snapshot),
+        } as DidChangeSnapshotNotification.Params,
+      )
     },
   }
 })

@@ -20,12 +20,12 @@ If workspace already has `likec4` as a dependency, check its version from packag
 
 ### ❌ Common mistakes (avoid these)
 
-| Incorrect                                   | Why it fails               | Correct                                  |
-| ------------------------------------------- | -------------------------- | ---------------------------------------- |
-| `bunx likec4 check ...`                     | Command doesn't exist      | Use `bunx likec4 validate ...`           |
-| `bunx likec4 lint ...`                      | Command doesn't exist      | Use `bunx likec4 validate ...`           |
-| `bunx likec4 verify ...`                    | Command doesn't exist      | Use `bunx likec4 validate ...`           |
-| `bunx likec4 export png --out-dir ./images` | Unknown flag (`--out-dir`) | Use `-o ./images` or `--outdir ./images` |
+| Incorrect                                  | Why it fails                              | Correct                                  |
+| ------------------------------------------ | ----------------------------------------- | ---------------------------------------- |
+| `bunx likec4 check ...`                    | Command doesn't exist                     | Use `bunx likec4 validate ...`           |
+| `bunx likec4 lint ...`                     | Command doesn't exist                     | Use `bunx likec4 validate ...`           |
+| `bunx likec4 verify ...`                   | Command doesn't exist                     | Use `bunx likec4 validate ...`           |
+| `bunx likec4 export png --out-dir ./images` | Unknown flag (`--out-dir`)                | Use `-o ./images` or `--outdir ./images` |
 
 ## `serve` (aliases: `start`, `dev`)
 
