@@ -72,7 +72,7 @@ OPTIONS
 
 ### MCP vs LeanIX bridge / Draw.io
 
-MCP tools expose the **resolved LikeC4 model** in the workspace (search, graph queries, views). They do **not** generate `@likec4/leanix-bridge` artifacts, run LeanIX sync, or export Draw.io with the **leanix** profile. For that vocabulary, use the **CLI** (`likec4 gen leanix …`, `likec4 sync leanix …`, `likec4 export drawio --profile leanix`) and the Agent Skill reference `skills/likec4-dsl/references/bridge-leanix-drawio.md` in the main repo.
+MCP tools expose the **resolved LikeC4 model** in the workspace (search, graph queries, views). They do **not** generate `@likec4/leanix-bridge` artifacts, run LeanIX sync, or export Draw.io with the **leanix** profile. For that vocabulary, use the **CLI** (`likec4 gen leanix …`, `likec4 sync leanix …`, `likec4 export drawio --profile leanix`) and the Agent Skill reference [`bridge-leanix-drawio.md`](../../skills/likec4-dsl/references/bridge-leanix-drawio.md) in this repository.
 
 ## Getting help
 
