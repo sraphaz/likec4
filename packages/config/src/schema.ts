@@ -298,6 +298,7 @@ export type LikeC4ProjectConfigInput = LikeC4ProjectJsonConfig & {
  * we validate landingPage once with LandingPageSchema and merge onto the result.
  */
 export function validateProjectConfig<C extends Record<string, unknown>>(config: C): LikeC4ProjectConfig {
+  const generatorsInput = config['generators']
   const inputLandingPage = config['landingPage']
   let validatedLandingPage: z.infer<typeof LandingPageSchema> | null = null
   if (inputLandingPage != null) {
@@ -307,7 +308,10 @@ export function validateProjectConfig<C extends Record<string, unknown>>(config:
     }
     validatedLandingPage = lpResult.data
   }
-  const parsed = LikeC4ProjectJsonConfigSchema.safeParse(config)
+  const configForJson = Object.fromEntries(
+    Object.entries(config).filter(([key]) => key !== 'generators'),
+  ) as Record<string, unknown>
+  const parsed = LikeC4ProjectJsonConfigSchema.safeParse(configForJson)
   if (!parsed.success) {
     throw new Error('Config validation failed:\n' + z.prettifyError(parsed.error))
   }
@@ -315,19 +319,28 @@ export function validateProjectConfig<C extends Record<string, unknown>>(config:
   if (validatedLandingPage !== null) {
     data = { ...data, landingPage: validatedLandingPage }
   }
-  const generatorsInput = config['generators']
-  if (
-    generatorsInput != null &&
-    typeof generatorsInput === 'object' &&
-    !Array.isArray(generatorsInput)
-  ) {
-    const genParsed = GeneratorsSchema.safeParse(generatorsInput)
-    if (!genParsed.success) {
-      throw new Error('Config validation failed (generators):\n' + z.prettifyError(genParsed.error))
-    }
-    return { ...data, generators: genParsed.data as Record<string, GeneratorFn> }
+  if (generatorsInput === undefined) {
+    return data
   }
-  return data
+  if (
+    generatorsInput === null ||
+    typeof generatorsInput !== 'object' ||
+    Array.isArray(generatorsInput)
+  ) {
+    const kind = generatorsInput === null
+      ? 'null'
+      : Array.isArray(generatorsInput)
+      ? 'an array'
+      : typeof generatorsInput
+    throw new Error(
+      `Config validation failed (generators): expected a plain object mapping generator names to functions, received ${kind}`,
+    )
+  }
+  const genParsed = GeneratorsSchema.safeParse(generatorsInput)
+  if (!genParsed.success) {
+    throw new Error('Config validation failed (generators):\n' + z.prettifyError(genParsed.error))
+  }
+  return { ...data, generators: genParsed.data as Record<string, GeneratorFn> }
 }
 
 /**

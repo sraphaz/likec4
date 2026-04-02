@@ -267,6 +267,65 @@ describe('ProjectConfig schema', () => {
       })
     })
 
+    describe('generators field', () => {
+      it('should accept empty generators object', ({ expect }) => {
+        const config = { name: 'test', generators: {} }
+        const result = validateConfig(config)
+        expect(result.generators).toEqual({})
+      })
+
+      it('should accept generators with functions', ({ expect }) => {
+        const gen = () => {}
+        const config = { name: 'test', generators: { myGen: gen } }
+        const result = validateConfig(config)
+        expect(result.generators).toEqual({ myGen: gen })
+      })
+
+      it('should omit generators when undefined', ({ expect }) => {
+        const config = { name: 'test', generators: undefined }
+        const result = validateConfig(config)
+        expect(result.generators).toBeUndefined()
+      })
+
+      it('should reject generators when null', ({ expect }) => {
+        expect(() => validateConfig({ name: 'test', generators: null })).toThrow(
+          /expected a plain object mapping generator names to functions, received null/,
+        )
+      })
+
+      it('should reject generators when a string', ({ expect }) => {
+        expect(() => validateConfig({ name: 'test', generators: 'oops' as unknown as Record<string, never> })).toThrow(
+          /expected a plain object mapping generator names to functions, received string/,
+        )
+      })
+
+      it('should reject generators when a number', ({ expect }) => {
+        expect(() => validateConfig({ name: 'test', generators: 1 as unknown as Record<string, never> })).toThrow(
+          /expected a plain object mapping generator names to functions, received number/,
+        )
+      })
+
+      it('should reject generators when an array', ({ expect }) => {
+        expect(() => validateConfig({ name: 'test', generators: [] as unknown as Record<string, never> })).toThrow(
+          /expected a plain object mapping generator names to functions, received an array/,
+        )
+      })
+
+      it('should reject generators when a function', ({ expect }) => {
+        expect(() => validateConfig({ name: 'test', generators: (() => {}) as unknown as Record<string, never> }))
+          .toThrow(/expected a plain object mapping generator names to functions, received function/)
+      })
+
+      it('should reject non-function generator values with Zod error', ({ expect }) => {
+        expect(() =>
+          validateConfig({
+            name: 'test',
+            generators: { bad: 'not a function' as unknown as () => void },
+          })
+        ).toThrow(/Config validation failed \(generators\)/)
+      })
+    })
+
     it('does not throw when config has valid landingPage (smoke)', ({ expect }) => {
       const config = { name: 'test', landingPage: { redirect: true } }
       expect(() => validateConfig(config)).not.toThrow()
