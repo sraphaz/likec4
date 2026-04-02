@@ -70,6 +70,10 @@ OPTIONS
 - `element-diff`: Compare two elements and show differences in properties, tags, metadata, and relationships.
 - `open-view`: Opens the LikeC4 view (available if MCP is running in the editor)
 
+### MCP vs LeanIX bridge / Draw.io
+
+MCP tools expose the **resolved LikeC4 model** in the workspace (search, graph queries, views). They do **not** generate `@likec4/leanix-bridge` artifacts, run LeanIX sync, or export Draw.io with the **leanix** profile. For that vocabulary, use the **CLI** (`likec4 gen leanix …`, `likec4 sync leanix …`, `likec4 export drawio --profile leanix`) and the Agent Skill reference `skills/likec4-dsl/references/bridge-leanix-drawio.md` in the main repo.
+
 ## Getting help
 
 We are always happy to help you get started:
