@@ -128,7 +128,7 @@
         "likec4.mcp.enabled": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Enable MCP Server  \nAdd MCP Server to your `#mcp#` configuration: \n```jsonc\n{\n  servers: {\n    likec4: {\n      type: 'sse',\n      url: 'http://localhost:33335/mcp'\n    }\n  }\n}\n```"
+          "markdownDescription": "Prefer enabling the LikeC4 MCP server from VS Code’s MCP / Copilot integration. The extension contributes a **stdio** server (bundled MCP); it is not the same as connecting to `http://localhost:33335/mcp`, which requires running `likec4 mcp --http` separately. See LikeC4 docs: MCP Server / AI Tools."
         },
         "likec4.mcp.port": {
           "description": "Port to use for MCP Server",

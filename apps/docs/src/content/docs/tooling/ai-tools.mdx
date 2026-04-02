@@ -1,16 +1,47 @@
 ---
-title: MCP Server
-description: How to setup and use LikeC4 MCP Server with LLMs
+title: AI Tools
+description: Agent skills and MCP Server for AI-powered architecture modeling
 head:
   - tag: title
-    content: MCP Server | LikeC4
+    content: AI Tools | LikeC4
 sidebar:
-  order: 5
+  order: 4
 ---
 
 import { Aside, CardGrid, LinkCard, TabItem as Tab, Tabs } from '@astrojs/starlight/components';
 
-LikeC4 <a href="https://modelcontextprotocol.io" target="_blank">MCP Server</a> provides knowledge of your LikeC4 model to LLMs.  
+LikeC4 provides two complementary tools for AI-powered development: **Agent Skills** for teaching AI assistants the DSL syntax, and an **MCP Server** for querying your architecture model. **LeanIX bridge workflows** (generate manifest/dry-run, sync, Draw.io `--profile leanix`) are CLI- and package-driven — MCP does not replace those commands.
+
+## Agent Skills
+
+Agent skills are DSL references that AI coding assistants load automatically when editing `.c4`/`.likec4` files.
+They teach agents correct LikeC4 syntax, patterns, and validation workflows — so they can write DSL code without hallucinating.
+
+### Install into any project
+
+```sh
+npx skills add https://likec4.dev/
+```
+
+This uses the <a href="https://www.skillsdk.dev/" target="_blank">Agent Skills Discovery</a> protocol. Available skills:
+
+| Skill | Description |
+|-------|-------------|
+| `likec4-dsl` | Complete DSL reference — specification, model, views, deployment, predicates, examples |
+
+Works with Claude Code, Cursor, Windsurf, and other agents that support the protocol.
+
+### Draw.io, LeanIX bridge, and skills
+
+- **Draw.io (default)** is produced with `likec4 export drawio` (no LeanIX-specific cell metadata).
+- **Draw.io LeanIX profile** adds bridge-managed styles (`bridgeManaged=true`, `likec4Id`, `likec4RelationId`, …): use `likec4 export drawio --profile leanix -o ./diagrams`.
+- **LeanIX artifacts** (manifest, dry-run, sync) come from the **CLI**, not from MCP: `likec4 gen leanix dry-run`, `likec4 sync leanix`, etc. See the [`@likec4/leanix-bridge` README](https://github.com/likec4/likec4/blob/main/packages/leanix-bridge/README.md).
+
+The published skill `likec4-dsl` includes `references/bridge-leanix-drawio.md` for exact command boundaries and round-trip notes.
+
+## MCP Server
+
+LikeC4 <a href="https://modelcontextprotocol.io" target="_blank">MCP Server</a> provides knowledge of your LikeC4 model to LLMs.
 This enables you to query your model in natural language:
 
 > _"Look up LikeC4 model and list all incoming relationships of the backend api"_
@@ -23,14 +54,14 @@ This enables you to query your model in natural language:
 
 > _"Export to CSV all relationships between Backend and Amazon SQS"_
 
-## Usage
+### Usage
 
 Three options are available:
 - Use extension's built-in MCP Server
 - Use `likec4 mcp` CLI
 - Use `@likec4/mcp` package
 
-### Using extension (VS Code — stdio)
+#### Using extension (VS Code — stdio)
 
 With the [LikeC4 extension](/tooling/editors/) installed, VS Code receives a **stdio** MCP server definition from the extension (Node runs the bundled MCP entrypoint). You **do not** point `mcp.json` at `http://localhost:33335/mcp` for this path — that URL is only for the separate **HTTP** flow below.
 
@@ -40,7 +71,7 @@ Enable or review MCP-related options in the extension <a href="vscode://settings
 **Extension (stdio):** the contributed server is available when the LikeC4 extension is active. It usually activates after you open a `.c4` / `.likec4` file. If the server does not appear, refresh the list of MCP servers in VS Code.
 :::
 
-### HTTP / SSE URL (CLI must be running)
+#### HTTP / SSE URL (CLI must be running)
 
 Use this when you start MCP with **HTTP** yourself (for example `likec4 mcp --http ./src`, default URL `http://localhost:33335/mcp`). Change the port with `likec4 mcp -p <port> --http …` or the equivalent flags on `likec4-mcp-server`. The editor only connects to whatever URL matches your running process.
 
@@ -93,7 +124,7 @@ Use this when you start MCP with **HTTP** yourself (for example `likec4 mcp --ht
 **HTTP:** keep `likec4 mcp --http` (or `@likec4/mcp` in HTTP mode) running while the editor uses the URL. If you change the CLI port, update the URL in `mcp.json` to match.
 :::
 
-### Using CLI
+#### Using CLI
 
 If you have installed [`likec4`](/tooling/cli) CLI, you can start MCP server with `stdio` transport:
 
@@ -115,7 +146,7 @@ Start MCP server with `http` transport on port `1234`:
 likec4 mcp -p 1234
 ```
 
-### Using `@likec4/mcp` package
+#### Using `@likec4/mcp` package
 
 Example configuration:
 
@@ -156,7 +187,7 @@ likec4-mcp-server -h
 Disable watch mode with `--no-watch` to consume less resources, if you have static workspace.
 :::
 
-## Available tools
+### Available tools
 
 | Tool | Description |
 |------|-------------|
