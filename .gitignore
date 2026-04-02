@@ -16,6 +16,7 @@ test-mcp-local.ts
 test-mcp-local.js
 
 panda.buildinfo.json
+.claude/worktrees
 .claude/settings.local.json
 
 apps/*/dist
@@ -143,11 +144,6 @@ docs/VALIDATION-*.md
 docs/FIX-*.md
 docs/BRIDGE-CLI.md
 docs/PR-REVIEW-AND-BOT-RESPONSES.md
-
-# Unofficial local notes (official: apps/docs, packages/*/README, skills references)
-docs/PLAYBOOK-*.md
-docs/BACKLOG-skills-*.md
-docs/INVESTIGATION-skills-*.md
 
 # Architecture-intelligence planning docs (internal, not official project docs)
 docs/architecture-intelligence/
