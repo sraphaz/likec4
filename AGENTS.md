@@ -27,7 +27,7 @@ LikeC4 is an architecture-as-code tool for visualizing software architecture. It
 - `styled-system/styles` holds `pandacss codegen` results, shared across packages.
 - `examples/` provides sample LikeC4 projects;
 - `devops/` - utilities for CI/CD, devops tasks.
-- **LeanIX / Draw.io (bridge) + AI:** user-facing [AI Tools](https://likec4.dev/tooling/ai-tools/) (source: `apps/docs/src/content/docs/tooling/ai-tools.mdx`); package [packages/leanix-bridge/README.md](packages/leanix-bridge/README.md); Agent Skill reference [skills/likec4-dsl/references/bridge-leanix-drawio.md](skills/likec4-dsl/references/bridge-leanix-drawio.md).
+- **LeanIX / Draw.io (bridge):** [packages/leanix-bridge/README.md](packages/leanix-bridge/README.md); Agent Skill reference [skills/likec4-dsl/references/bridge-leanix-drawio.md](skills/likec4-dsl/references/bridge-leanix-drawio.md). (A consolidated **AI Tools** docs hub is tracked in a separate PR.)
 
 ## Build, Test, and Development Commands
 
